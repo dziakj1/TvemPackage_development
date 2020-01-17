@@ -1,4 +1,125 @@
-library(mgcv);
+#' Fit a time-varying effect model.
+#' 
+#' Fits a time-varying effect model (Tan et al., 2012) ;  that is,
+#' a varying-coefficients model (Hastie & Tibshirani, 1993) for 
+#' longitudinal data.
+#' 
+#' @note The interface is based somewhat on the TVEM 3.1.1 SAS macro by 
+#' the Methodology Center (Li et al., 2017).  However, that macro uses 
+#' either "P-splines" (penalized truncated power splines) or "B-splines" 
+#' (unpenalized B(asic)-splines, like those of Eilers and Marx, 1996, 
+#' but without the smoothing) penalty.  The current function uses 
+#' penalized B-splines, much more like those of Eilers and Marx (1996).
+#' However, the use is more like the "P-spline" method in TVEM 3.1 than 
+#' the "B-spline" mode, in that the precise choice of knots 
+#' is not critical, the tuning is done automatically, and the fitted model
+#' is intended to be interpreted in a population-averaged (marginal, 
+#' way.  Thus, random effects are not allowed, but sandwich standard 
+#' errors are used in attempt to account for within-subject correlation,
+#' similar to working-independence GEE (Liang and Zeger, 1986).
+#' 
+#' @note Note that as in ordinary parametric regression, if the range
+#'  of the covariate does not include values near zero, then the 
+#'  interpretation of the intercept coefficient may be somewhat 
+#'  difficult and its standard errors may be large (i.e., due to extrapolation).
+#' 
+#' @note The bam ("Big Additive Models") function in the 
+#' mgcv package ("Mixed GAM Computation Vehicle with GCV/AIC/REML smoothness
+#' estimation and GAMMs by REML/PQL") by Simon Wood is used for back-end
+#' calculations.
+#' 
+#' @references 
+#' Eilers, P. H. C., & Marx, B.  D. (1996). Flexible smoothing with B-splines
+#'  and penalties. Statistical Science, 11: 89-121.
+#' Hastie, T, Tibshirani, R. (1993). Varying-coefficient models. Journal 
+#'  of the Royal Statistical Socety, B, 55:757-796
+#' Li, R., Dziak, J. J., Tan, X., Huang, L., Wagner, A. T., & Yang, J. (2017).
+#'  TVEM (time-varying effect model) SAS macro users' guide (Version 3.1.1).
+#'  University Park: The Methodology Center, Penn State. Retrieved from
+#'  http://methodology.psu.edu
+#' Liang KY, Zeger SL. Longitudinal data analysis using generalized linear
+#'  models. Biometrika. 1986; 73:13-22.
+#' Tan, X., Shiyko, M. P., Li, R., Li, Y., & Dierker, L. (2012). A time-varying
+#'  effect model for intensive longitudinal data. Psychological Methods, 17: 
+#'  61-77.
+#' 
+#' @param data The dataset containing the observations, assumed
+#'   to be in long form (i.e., one row per observation, potentially
+#'   multiple rows per subject).
+#' @param formula A formula listing the outcome on the left side, 
+#'   and the time-varying effects on the right-side.  For a time-
+#'   varying intercept only, use y~1, where y is the name of the 
+#'   outcome.  For a single time-varying-effects covariate, use
+#'   y~x, where x is the name of the covariate.  For multiple 
+#'   covariates, use syntax like y~x1+x2.  Do not include the non-
+#'   time-varying-effects covariates here.  Not that the values 
+#'   of these covariates themselves may either be time-varying 
+#'   or not time-varying.  For an example of a non-time-varying
+#'   covariate that has a time-varying effect, consider the effect
+#'   of biological sex on height during childhood and adolescence.  
+#'   An intercept can be excluded by specifying, say, y~x1+x2+0 
+#'   instead of y~x1+x2.  However, this is usually not encouraged. 
+#' @param id The name of the variable in the dataset which represents 
+#'   subject (participant) identity.  Observations are considered 
+#'   to be correlated within subject (although the correlation 
+#'   structure is not explicitly modeled) but are assumed independent
+#'   between subjects.
+#'  @param time The name of the variable in the dataset which 
+#'   represents time. The regression coefficient functions representing 
+#'   the time-varying effects are assumed to be smooth functions 
+#'   of this variable.  
+#'  @param invar_effects  Optionally, the names of one or more 
+#'   variables in the dataset assumed to have a non-time-varying
+#'   regression effect on the outcome.  The values of these covariates 
+#'   themselves may either be time-varying or not time-varying.  The
+#'   covariates should be specified as the right side of a formula, e.g.,
+#'   ~x1 or ~x1+x2.
+#'  @param family  The outcome family, as specified in functions like 
+#'   glm.  For a numerical outcome you can use the default of gaussian(). 
+#'   For a binary outcome, use binomial().  The parentheses after the
+#'   family name are there because it is actually a built-in R object.
+#'  @param num_knots The number of interior knots assumed per spline function,
+#'   not counting exterior knots.  Because of the automatic complexity 
+#'   penalty, it is generally okay to leave num_knots at its default.    
+#'  @param spline_order The shape of the function between knots, with a
+#'   default of 3 representing cubic spline.
+#'  @param penalty_function_order The order of the penalty function (see 
+#'   Eilers and Marx, 1996), with a default of 2 for second-order 
+#'   difference penalty.
+#'  @param grid The number of points at which the spline coefficients
+#'  will be estimated, for the purposes of the pointwise estimates and 
+#'  pointwise standard errors to be included in the output object.
+#'  @param alpha  One minus the nominal coverage for 
+#'   the pointwise confidence intervals to be constructed.  Note that a 
+#'   multiple comparisons correction is not applied.  Also, in some cases
+#'   the nominal coverage may not be exactly achieved even pointwise, 
+#'   because of uncertainty in the tuning parameter and risk of overfitting.
+#'   These problems are not unique to TVEM but are found in many curve-
+#'   fitting situations.  
+#' 
+#' @return An object of type tvem.  The components of an object of 
+#'   type tvem are as follows:
+#' \describe{
+#'   \item{time_grid}{A vector containing many evenly spaced time 
+#'    points along the interval between the lowest and highest observed 
+#'    time value.  The exact number of points is determined by the 
+#'    input parameter 'grid'.}
+#'   \item{grid_fitted_coefficients}{A list of data frames, one for 
+#'    each smooth function which was fit (including the intercept).  Each 
+#'    data frame contains the fitted estimates of the function
+#'    at each point of time_grid, along with pointwise standard 
+#'    errors and pointwise confidence intervals.}
+#'   \item{invar_effects_estimates}{If any variables are specified in
+#'    invar_effects, their estimated regression coefficients and 
+#'    standard errors are shown here.}
+#'   \item{model_information}{A list summarizing the options
+#'    specified in the call to the function.}
+#'   \item{back_end_model}{The full output from the bam() 
+#'    function from the mgcv package, which was used to fit the 
+#'    penalized spline regression model underlying the TVEM.}
+#' }  
+#' @export
+
 tvem <- function(data,
                  formula,
                  id,
@@ -10,7 +131,6 @@ tvem <- function(data,
                  spline_order=3,
                  # shape of function between knots, with default of 3 for cubic;
                  penalty_function_order=2,
-                 smoothing_penalty_multiplier=1,
                  grid=100,
                  alpha=.05
 ) {   
@@ -146,7 +266,7 @@ tvem <- function(data,
   data_for_analysis <- as.data.frame(eval.parent(data)); 
   model1 <- bam(bam_formula,
                 data=data_for_analysis,
-                gamma=smoothing_penalty_multiplier);
+                gamma=1);
   ##################################
   # Extract coefficient estimates;
   ##################################
