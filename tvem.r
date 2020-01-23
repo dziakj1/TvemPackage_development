@@ -1,6 +1,6 @@
-#' Fit a time-varying effect model.
+#' tvem:  Fit a time-varying effect model.
 #' 
-#' Fits a time-varying effect model (Tan et al., 2012) ;  that is,
+#' Fits a time-varying effect model (Tan et al., 2012);  that is,
 #' a varying-coefficients model (Hastie & Tibshirani, 1993) for 
 #' longitudinal data.
 #' 
@@ -26,7 +26,7 @@
 #' @note The bam ("Big Additive Models") function in the 
 #' mgcv package ("Mixed GAM Computation Vehicle with GCV/AIC/REML smoothness
 #' estimation and GAMMs by REML/PQL") by Simon Wood is used for back-end
-#' calculations.
+#' calculations (see Wood, Goude & Shaw, 2015).
 #' 
 #' @references 
 #' Eilers, P. H. C., & Marx, B.  D. (1996). Flexible smoothing with B-splines
@@ -37,11 +37,13 @@
 #'  TVEM (time-varying effect model) SAS macro users' guide (Version 3.1.1).
 #'  University Park: The Methodology Center, Penn State. Retrieved from
 #'  http://methodology.psu.edu
-#' Liang KY, Zeger SL. Longitudinal data analysis using generalized linear
+#' Liang, K. Y., Zeger, S. L. Longitudinal data analysis using generalized linear
 #'  models. Biometrika. 1986; 73:13-22.
 #' Tan, X., Shiyko, M. P., Li, R., Li, Y., & Dierker, L. (2012). A time-varying
 #'  effect model for intensive longitudinal data. Psychological Methods, 17: 
 #'  61-77.
+#' Wood, S. N., Goude, Y., & Shaw, S. (2015). Generalized additive models 
+#'  for large data sets. Applied Statistics, 64: 139-155.
 #' 
 #' @param data The dataset containing the observations, assumed
 #'   to be in long form (i.e., one row per observation, potentially
@@ -118,6 +120,10 @@
 #'    function from the mgcv package, which was used to fit the 
 #'    penalized spline regression model underlying the TVEM.}
 #' }  
+#' 
+#' @keywords Statistics|smooth
+#' @keywords Statistics|models|regression
+#' 
 #' @export
 
 tvem <- function(data,

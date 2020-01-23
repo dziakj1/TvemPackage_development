@@ -1,4 +1,14 @@
-print_tvem <- function(the_tvem, ornate=TRUE) {
+#' print.tvem:  Print output from a model that was fit by the tvem function.
+#' 
+#' @param the_tvem The tvem object (output of the tvem function)
+#' @param ornate Whether to print lines between different sections of the output for easier reading.
+#' 
+#' @export
+
+
+
+
+print.tvem <- function(the_tvem, ornate=TRUE) {
   if (ornate) {
     divider <- "======================================================= \n";
   } else {

@@ -1,4 +1,28 @@
-plot_tvem <- function(the_tvem,
+#' plot.tvem:  Draw plots for a tvem model.
+#' 
+#' Produces plots from a tvem object produced by 
+#' the tvem function.  These plots will be shown on the default
+#' output device (likely the screen);  they can of course be 
+#' written to a file instead, by preceding the call to plot.tvem 
+#' with a call to png(), pdf(), or other R graphic file output functions.
+#' 
+#' @param the_tvem The TVEM object to be plotted.
+#' @param use_panes Whether to plot multiple coefficient
+#' functions in a single image.
+#' @param which_plot The coefficient number to plot,
+#' if only one plot is desired at a time. 
+#' @param diagnostics If this is set to TRUE, then 
+#' instead of plotting coefficient functions,
+#' the function will show a histogram of residuals 
+#' and a plot of fitted values versus
+#' residuals.  These may be useful in checking for 
+#' outliers or skew in TVEM with a numeric
+#' outcome.  They are not likely to be as useful 
+#' in TVEM with a binary or other discrete outcome.
+#' 
+#' @export
+
+plot.tvem <- function(the_tvem,
                       use_panes=TRUE,
                       which_plot=NULL,
                       diagnostics=FALSE) {
