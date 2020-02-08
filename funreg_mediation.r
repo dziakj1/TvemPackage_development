@@ -132,35 +132,36 @@ funreg_mediation <- function(data,
   m[[1]] <- quote(stats::model.frame);
   m <- eval.parent(m);
   id_variable_name <- as.character(substitute(id));
-  id_variable <- m[,id_variable_name];
   time_variable_name <- as.character(substitute(time));
-  time_variable <- m[,time_variable_name]; 
   treatment_variable_name <- as.character(substitute(treatment));
-  treatment_variable <- m[,treatment_variable_name]; 
   mediator_variable_name <- as.character(substitute(mediator));
-  mediator_variable <- m[,mediator_variable_name]; 
   outcome_variable_name <- as.character(substitute(outcome));
-  outcome_variable <- m[,outcome_variable_name]; 
-  long_data_for_analysis <- as.data.frame(eval.parent(data));
-  long_data_for_analysis$id_for_tvem_function <- id_variable;
-  long_data_for_analysis$time_for_tvem_function <- time_variable;
+  long_data_for_analysis <- as.data.frame(eval.parent(data)); 
+  id_variable <- long_data_for_analysis[,id_variable_name];
+  time_variable <- long_data_for_analysis[,time_variable_name]; 
+  treatment_variable <- long_data_for_analysis[,treatment_variable_name]; 
+  mediator_variable <- long_data_for_analysis[,mediator_variable_name]; 
+  outcome_variable <- long_data_for_analysis[,outcome_variable_name]; 
+  if (sum(is.na(id_variable>0))) {
+    stop("Please remove data rows which have missing data on the id variable.");
+  }
   #-------------------------------------------;
   # ----- Process covariates -----------------;
-  if (is.null (covariates_on_outcome)) {
+  if (is.null(covariates_on_outcome)) {
     covariates_on_outcome_names <- NULL;
   } else {
     covariates_on_outcome_names <- attr(terms(covariates_on_outcome),"term.labels");
   }
   num_covariates_on_outcome <- length(covariates_on_outcome_names);
   covariates_on_outcome_data <- long_data_for_analysis[,covariates_on_outcome_names,drop=FALSE];
-  if (is.null (tve_covariates_on_mediator)) {
+  if (is.null(tve_covariates_on_mediator)) {
     tve_covariates_on_mediator_names <- NULL;
   } else {
     tve_covariates_on_mediator_names <- attr(terms(tve_covariates_on_mediator),"term.labels");
   }
   num_tve_covariates_on_mediator <- length(tve_covariates_on_mediator_names); 
   tve_covariates_on_mediator_data <- long_data_for_analysis[,tve_covariates_on_mediator_names,drop=FALSE];
-  if (is.null (tie_covariates_on_mediator)) {
+  if (is.null(tie_covariates_on_mediator)) {
     tie_covariates_on_mediator_names <- NULL;
   } else {
     tie_covariates_on_mediator_names <- attr(terms(tie_covariates_on_mediator),"term.labels");
@@ -174,14 +175,14 @@ funreg_mediation <- function(data,
   #-------------------------------------------;
   #--- CONVERT MEDIATOR M TO WIDE FORM -------;
   #-------------------------------------------;  
-  if (max(unlist(lapply(split(treatment_variable,f=id_variable),var)))>1e-10) {
+  if (max(unlist(lapply(split(treatment_variable,f=id_variable),var, na.rm=TRUE)))>1e-10) {
     stop("Please make sure that the subject-level treatment is constant within subject.")
   }
-  if (max(unlist(lapply(split(outcome_variable,f=id_variable),var)))>1e-10) {
+  if (max(unlist(lapply(split(outcome_variable,f=id_variable),var, na.rm=TRUE)))>1e-10) {
     stop("Please make sure that the subject-level outcome is constant within subject.")
   }
   observed_time_grid <- sort(unique(time_variable));
-  wide_id <- sort(unique(id_variable));
+  wide_id <- sort(unique(id_variable[which(!is.na(id_variable))]));
   # Should the user provide the data as long or wide?
   nobs <- length(observed_time_grid);
   nsub <- length(wide_id);
@@ -197,35 +198,52 @@ funreg_mediation <- function(data,
   if (num_tie_covariates_on_mediator>0) {
     wide_tie_covariates_on_mediator <- matrix(NA,nsub,num_tie_covariates_on_mediator);
   }
+  stopifnot(length(wide_id)>0);
+  if (!is.null(covariates_on_outcome_data)) {
+    stopifnot(length(id_variable)==nrow(covariates_on_outcome_data));
+  }
+  if (!is.null(tie_covariates_on_mediator_data)) {
+    stopifnot(length(id_variable)==nrow(tie_covariates_on_mediator_data));
+  }
+  if (!is.null(tve_covariates_on_mediator_data)) {
+    stopifnot(length(id_variable)==nrow(tve_covariates_on_mediator_data));
+  }
   for (this_id in 1:length(wide_id)) {
     these_rows <- which(id_variable==wide_id[this_id]); 
     if (length(these_rows)>0) {
-      if (min(treatment_variable[these_rows])!=
-          max(treatment_variable[these_rows])) {
+      if (min(treatment_variable[these_rows], na.rm=TRUE)!=
+          max(treatment_variable[these_rows], na.rm=TRUE)) {
         stop("Please make sure the treatment is the same for each observation within subject.")
       }
       wide_treatment[this_id] <- treatment_variable[min(these_rows)];
-      if (min(outcome_variable[these_rows])!=
-          max(outcome_variable[these_rows])) {
+      if (min(outcome_variable[these_rows], na.rm=TRUE)!=
+          max(outcome_variable[these_rows], na.rm=TRUE)) {
         stop("Please make sure the outcome is the same for each observation within subject.")
       }
       wide_outcome[this_id] <- outcome_variable[min(these_rows)];
       if (num_covariates_on_outcome>0) {
-        if (max(apply(covariates_on_outcome_data[these_rows,,drop=FALSE],2,var))>0) {
+        if (max(apply(covariates_on_outcome_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE))>0) {
+          print(paste("Possible problem in covariates_on_outcome_data for participant",wide_id[this_id]));
+          print(covariates_on_outcome_data[these_rows,,drop=FALSE]);
           stop("Please make sure that the covariates on the outcome do not vary within subject for this model.")
         }
       }
       if (num_tve_covariates_on_mediator>0) {
-        if (max(apply(tve_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var))>0) {
+        if (max(apply(tve_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE))>0) {
+          print(paste("Possible problem in tve_covariates_on_mediator_data for participant",wide_id[this_id]));
+          print(tve_covariates_on_mediator_data[these_rows,,drop=FALSE]);
           stop("Please make sure that the covariates on the mediator do not vary within subject for this model.")
         }
       }
       if (num_tie_covariates_on_mediator>0) {
-        if (max(apply(tie_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var))>0) {
+        if (max(apply(tie_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE))>0) {
+          print(paste("Possible problem in tie_covariates_on_mediator_data for participant",wide_id[this_id]));
+          print(tie_covariates_on_mediator_data[these_rows,,drop=FALSE]);
           stop("Please make sure that the covariates on the mediator do not vary within subject for this model.")
         }
       }
     }
+    stopifnot(length(observed_time_grid)>0);
     for (this_time in 1:length(observed_time_grid)) { 
       this_data <- which(id_variable==wide_id[this_id] &
                            time_variable==observed_time_grid[this_time]); 
@@ -296,18 +314,20 @@ funreg_mediation <- function(data,
     #--- EFFECT OF MEDIATOR M AND TREATMENT X ON OUTCOME Y ---;
     pfr_formula <- wide_outcome~lf(wide_mediator,
                                    presmooth="interpolate")+wide_treatment;
-    for (this_one in 1:num_covariates_on_outcome) {  
-      assign(paste("wide_",covariates_on_outcome_names[this_one],sep=""),
-             wide_covariates_on_outcome[,this_one]);
-      new_one <- as.formula(paste("~.+wide_",covariates_on_outcome_names[this_one],sep=""));
-      pfr_formula <- update(pfr_formula,new_one);
+    if (num_covariates_on_outcome>0) {
+      for (this_one in 1:num_covariates_on_outcome) {  
+        assign(paste("wide_",covariates_on_outcome_names[this_one],sep=""),
+               wide_covariates_on_outcome[,this_one]);
+        new_one <- as.formula(paste("~.+wide_",covariates_on_outcome_names[this_one],sep=""));
+        pfr_formula <- update(pfr_formula,new_one);
+      }
     }
     if (logistic) {
       funreg_MY <- pfr(pfr_formula,
                        family=binomial());
       # I wish I could let the user send the data and family in from outside the function,
       # but the pfr function does not allow this due to its unusual implementation
-      # as a wrap-around for a hidden call to gam.
+      # as a wrap-around for a hidden call to gam.;
     } else {
       funreg_MY <- pfr(pfr_formula,
                        family=gaussian());
@@ -321,10 +341,12 @@ funreg_mediation <- function(data,
     alpha_M_pvalue <- summary(funreg_MY)$s.table[1,"p-value"];
     #--- DIRECT EFFECT OF TREATMENT X ON OUTCOME Y ---;
     glm_formula <- wide_outcome~wide_treatment;
-    for (this_one in 1:num_covariates_on_outcome) { 
-      new_one <- as.formula(paste("~.+wide_",covariates_on_outcome_names[this_one],sep=""));
-      glm_formula <- update(glm_formula,new_one);
-    } 
+    if (num_covariates_on_outcome>0) {
+      for (this_one in 1:num_covariates_on_outcome) { 
+        new_one <- as.formula(paste("~.+wide_",covariates_on_outcome_names[this_one],sep=""));
+        glm_formula <- update(glm_formula,new_one);
+      } 
+    }
     if (logistic) {
       model_for_direct_effect_XY <- glm(glm_formula,
                                         family=binomial);
@@ -343,19 +365,23 @@ funreg_mediation <- function(data,
                                   mediator=as.vector(t(wide_mediator)));
     tvem_formula1 <- mediator~treatment;
     tvem_formula2 <- tie_covariates_on_mediator;
-    for (this_one in 1:num_tve_covariates_on_mediator) {
-      new_name <- tve_covariates_on_mediator_names[this_one];
-      temp_data_frame <- data.frame(temp=rep(wide_tve_covariates_on_mediator[,this_one],each=nobs));
-      colnames(temp_data_frame) <- new_name;
-      local_long_data <- cbind(local_long_data, temp_data_frame); 
-      new_term <- as.formula(paste("~.+",new_name,sep=""));
-      tvem_formula1 <- update(tvem_formula1,new_term);
+    if (num_tve_covariates_on_mediator>0) {
+      for (this_one in 1:num_tve_covariates_on_mediator) {
+        new_name <- tve_covariates_on_mediator_names[this_one];
+        temp_data_frame <- data.frame(temp=rep(wide_tve_covariates_on_mediator[,this_one],each=nobs));
+        colnames(temp_data_frame) <- new_name;
+        local_long_data <- cbind(local_long_data, temp_data_frame); 
+        new_term <- as.formula(paste("~.+",new_name,sep=""));
+        tvem_formula1 <- update(tvem_formula1,new_term);
+      }
     }
-    for (this_one in 1:num_tie_covariates_on_mediator) {
-      new_name <- tie_covariates_on_mediator_names[this_one];
-      temp_data_frame <- data.frame(temp=rep(wide_tie_covariates_on_mediator[,this_one],each=nobs));
-      colnames(temp_data_frame) <- new_name;
-      local_long_data <- cbind(local_long_data, temp_data_frame); 
+    if (num_tie_covariates_on_mediator>0) {
+      for (this_one in 1:num_tie_covariates_on_mediator) {
+        new_name <- tie_covariates_on_mediator_names[this_one];
+        temp_data_frame <- data.frame(temp=rep(wide_tie_covariates_on_mediator[,this_one],each=nobs));
+        colnames(temp_data_frame) <- new_name;
+        local_long_data <- cbind(local_long_data, temp_data_frame); 
+      }
     }
     local_long_data <- local_long_data[which(!is.na(local_long_data$mediator)),];
     # listwise deletion to remove empty observations; 

@@ -4,6 +4,7 @@
 #' @param ornate Whether to print lines between different sections of the output for easier reading.
 #' 
 #' @export
+#' @S3method print tvem
 
 
 

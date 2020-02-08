@@ -21,6 +21,7 @@
 #' in TVEM with a binary or other discrete outcome.
 #' 
 #' @export
+#' @S3method plot tvem
 
 plot.tvem <- function(the_tvem,
                       use_panes=TRUE,

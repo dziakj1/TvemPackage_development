@@ -154,9 +154,7 @@ tvem <- function(data,
   m[[1]] <- quote(stats::model.frame);
   m <- eval.parent(m); 
   id_variable_name <- as.character(substitute(id));
-  id_variable <- m[,id_variable_name];
   time_variable_name <- as.character(substitute(time));
-  time_variable <- m[,time_variable_name]; 
   if (is.character(family)) {
     # Handle the possibility that the user specified family
     # as a string instead of an object of class family.
@@ -184,7 +182,33 @@ tvem <- function(data,
   if (whether_intercept != 1) {
     stop("An intercept function is required in the current version of this function")
   }
-  formula_variable_names <- attr(attr(the_terms,"factors"),"dimnames")[[1]];
+  formula_variable_names <- attr(attr(the_terms,"factors"),"dimnames")[[1]]; 
+  if (is.null (invar_effects)) {
+    invar_effects_names <- NULL;
+  } else {
+    invar_effects_names <- attr(terms(invar_effects),"term.labels");
+  }
+  num_invar_effects <- length(invar_effects_names);
+  data_for_analysis <- as.data.frame(eval.parent(data)); 
+  used_listwise_deletion <- FALSE;
+  names_to_check <- c(id_variable_name,
+                      time_variable_name,
+                      formula_variable_names);
+  if (num_invar_effects>0) {
+    names_to_check <- c(names_to_check,
+                        invar_effects_names)
+  }
+  for (variable_name in names_to_check) {
+    if (sum(is.na(data_for_analysis[,variable_name]))>0) {
+      data_for_analysis <- data_for_analysis[which(!is.na(data_for_analysis[,variable_name])),]; 
+      used_listwise_deletion <- TRUE;
+    }
+  } 
+  if (used_listwise_deletion) {
+    warning("Used listwise deletion for missing data");
+  } 
+  id_variable <- data_for_analysis[,id_variable_name];
+  time_variable <- data_for_analysis[,time_variable_name];
   response_name <- formula_variable_names[[1]];
   num_varying_effects <- length(formula_variable_names)-1; # not including intercept;
   if (num_varying_effects>0) {
@@ -214,14 +238,7 @@ tvem <- function(data,
   # This function is bam (big generalized additive models) in the  
   # mgcv (Mixed GAM Computation Vehicle) package by Simon Wood of R Project.
   ##################################
-  if (is.null (invar_effects)) {
-    invar_effects_names <- NULL;
-  } else {
-    invar_effects_names <- attr(terms(invar_effects),"term.labels");
-  }
-  num_invar_effects <- length(invar_effects_names);
   bam_formula <- as.formula(paste(response_name," ~ ", "1"));
-  
   if (length(intersect(invar_effects_names,
                        varying_effects_names))>0) {
     stop(paste("Please do not specify the same variable",
@@ -269,7 +286,6 @@ tvem <- function(data,
       bam_formula <- update(bam_formula,as.formula(new_text));
     }
   } 
-  data_for_analysis <- as.data.frame(eval.parent(data)); 
   model1 <- bam(bam_formula,
                 data=data_for_analysis,
                 gamma=1);
@@ -309,11 +325,10 @@ tvem <- function(data,
   # Working independence variance estimates (will make sandwich):
   bread <- model1$Vc;
   npar <- length(model1$coefficients);
-  subject_id <- id_variable; 
   meat <- matrix(0,npar,npar);  # apologies to vegetarians -- 
   # peanut butter is also fine!
-  for (i in unique(subject_id)) {
-    these <- which(subject_id==i);
+  for (i in unique(id_variable[which(!is.na(id_variable))])) {
+    these <- which(id_variable==i); 
     if (length(these)>0) {
       meat <- meat + tcrossprod(crossprod(
         design[these,],model1$residuals[these]));
@@ -367,7 +382,6 @@ tvem <- function(data,
       this_covariate_values <- model1$model[,this_covariate_name];
       this_spline_term <- paste("s(",time_variable_name,"):",
                                 this_covariate_name,sep="");
-      
       indices_for_this_b <- which((general_term_name == this_covariate_name) | 
                                     (general_term_name == this_spline_term)); 
       estimated_this_b <- (basis_for_b0%*%model1$coefficients[indices_for_this_b]);

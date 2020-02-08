@@ -3,6 +3,7 @@
 #' @param fitted_funmed_model The funreg_mediation object (output of the funreg_mediation function)
 #' 
 #' @export
+#' @S3method print funreg
 
 print.funreg_mediation <- function(fitted_funmed_model) {
   cat("======================================================= \n");

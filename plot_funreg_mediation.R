@@ -16,6 +16,7 @@
 #' }
 #' 
 #' @export
+#' @S3method plot funreg
 #' 
 plot.funreg_mediation <- function(fitted_funmed_model,
                                   use_panes=TRUE, 
