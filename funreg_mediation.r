@@ -115,7 +115,7 @@ funreg_mediation <- function(data,
   #-------------------------------------------;
   #--- PROCESSING OF INPUT -------------------;
   #-------------------------------------------;
-  cat("Working")
+  cat("Working\n")
   m <- match.call(expand.dots = FALSE);
   m$treatment <- NULL;
   m$mediator <- NULL;
@@ -222,21 +222,21 @@ funreg_mediation <- function(data,
       }
       wide_outcome[this_id] <- outcome_variable[min(these_rows)];
       if (num_covariates_on_outcome>0) {
-        if (max(apply(covariates_on_outcome_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE))>0) {
+        if (max(apply(covariates_on_outcome_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE), na.rm = TRUE)>0) {
           print(paste("Possible problem in covariates_on_outcome_data for participant",wide_id[this_id]));
           print(covariates_on_outcome_data[these_rows,,drop=FALSE]);
           stop("Please make sure that the covariates on the outcome do not vary within subject for this model.")
         }
       }
       if (num_tve_covariates_on_mediator>0) {
-        if (max(apply(tve_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE))>0) {
+        if (max(apply(tve_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE), na.rm = TRUE)>0) {
           print(paste("Possible problem in tve_covariates_on_mediator_data for participant",wide_id[this_id]));
           print(tve_covariates_on_mediator_data[these_rows,,drop=FALSE]);
           stop("Please make sure that the covariates on the mediator do not vary within subject for this model.")
         }
       }
       if (num_tie_covariates_on_mediator>0) {
-        if (max(apply(tie_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE))>0) {
+        if (max(apply(tie_covariates_on_mediator_data[these_rows,,drop=FALSE],2,var, na.rm = TRUE), na.rm = TRUE)>0) {
           print(paste("Possible problem in tie_covariates_on_mediator_data for participant",wide_id[this_id]));
           print(tie_covariates_on_mediator_data[these_rows,,drop=FALSE]);
           stop("Please make sure that the covariates on the mediator do not vary within subject for this model.")
@@ -293,8 +293,8 @@ funreg_mediation <- function(data,
   analyze_data_for_mediation <- function(wide_data, 
                                          indices, 
                                          get_details=FALSE) {
-    local_wide_data <- wide_data[indices,];
     cat(".");
+    local_wide_data <- wide_data[indices,];
     #--- Take data frame apart into pieces to use with pfr function 
     wide_mediator <- local_wide_data[,wide_mediator_columns];
     wide_id <- local_wide_data[,wide_id_column];
@@ -322,22 +322,34 @@ funreg_mediation <- function(data,
         pfr_formula <- update(pfr_formula,new_one);
       }
     }
+	###save.image("working.rdata");
     if (logistic) {
-      funreg_MY <- pfr(pfr_formula,
-                       family=binomial());
+      funreg_MY <- try(pfr(pfr_formula,
+                           scale=1,
+                           family=binomial()));
       # I wish I could let the user send the data and family in from outside the function,
       # but the pfr function does not allow this due to its unusual implementation
       # as a wrap-around for a hidden call to gam.;
     } else {
-      funreg_MY <- pfr(pfr_formula,
-                       family=gaussian());
+      funreg_MY <- try(pfr(pfr_formula,
+                           family=gaussian()));
     } 
+    if (any(class(funreg_MY)=="try-error")) {
+      print(funreg_MY);
+      stop("Error in running pfr.")
+    } else {
+      print(c(min(funreg_MY$coefficients),
+              mean(funreg_MY$coefficients),
+              max(funreg_MY$coefficients),
+              var(funreg_MY$coefficients)));
+    }
     alpha_int_estimate <- as.numeric(funreg_MY$coefficient["(Intercept)"]);
     alpha_int_se <- as.numeric(summary(funreg_MY)$se["(Intercept)"]);
     alpha_X_estimate <-  as.numeric(funreg_MY$coefficient["wide_treatment"]);
     alpha_X_se <- as.numeric(summary(funreg_MY)$se["wide_treatment"]);
     alpha_M_estimate <- as.numeric(coef(funreg_MY)[,"value"]); 
-    alpha_M_se <- coef(funreg_MY)[,"se"];  
+    alpha_M_se <- coef(funreg_MY)[,"se"];
+    time_grid_for_fitting <- coef(funreg_MY)[,"wide_mediator.argvals"];
     alpha_M_pvalue <- summary(funreg_MY)$s.table[1,"p-value"];
     #--- DIRECT EFFECT OF TREATMENT X ON OUTCOME Y ---;
     glm_formula <- wide_outcome~wide_treatment;
@@ -385,20 +397,35 @@ funreg_mediation <- function(data,
     }
     local_long_data <- local_long_data[which(!is.na(local_long_data$mediator)),];
     # listwise deletion to remove empty observations; 
-    tvem_XM <- tvem(data=local_long_data,
-                    formula=tvem_formula1,
-                    time=time,
-                    id=id,
-                    invar_effects=tvem_formula2,
-                    grid=observed_time_grid);
+    if (get_details) {
+      tvem_XM <- tvem(data=local_long_data,
+                      formula=tvem_formula1,
+                      time=time,
+                      id=id,
+                      invar_effects=tvem_formula2,
+                      grid=time_grid_for_fitting);
+    } else {
+      tvem_XM <- suppressWarnings(tvem(data=local_long_data,
+                                       formula=tvem_formula1,
+                                       time=time,
+                                       id=id,
+                                       invar_effects=tvem_formula2,
+                                       grid=time_grid_for_fitting));
+    }
     gamma_int_estimate <- tvem_XM$grid_fitted_coefficients[[1]]$estimate; 
     gamma_int_se <- tvem_XM$grid_fitted_coefficients[[1]]$standard_error;
     gamma_X_estimate <- tvem_XM$grid_fitted_coefficients[[2]]$estimate; 
     gamma_X_se <- tvem_XM$grid_fitted_coefficients[[2]]$standard_error; 
     # #--- MEDIATED EFFECT OF TREATMENT X THROUGH MEDIATOR M ON OUTCOME Y ---;
+    print(round(c(min(gamma_X_estimate),
+                  median(gamma_X_estimate),
+                  max(gamma_X_estimate),
+                  min(alpha_M_estimate),
+                  median(alpha_M_estimate),
+                  max(alpha_M_estimate)),4));    
     beta_estimate <- mean(gamma_X_estimate*alpha_M_estimate);
-    if (get_details) {
-      return(list(time_grid=observed_time_grid,
+    if (get_details) { 
+      return(list(time_grid=time_grid_for_fitting,
                   gamma_int_estimate=gamma_int_estimate,
                   gamma_int_se=gamma_int_se,
                   gamma_X_estimate=gamma_X_estimate,
@@ -418,7 +445,7 @@ funreg_mediation <- function(data,
                   tvem_XM_details=tvem_XM,
                   funreg_MY_details=funreg_MY,
                   direct_effect_details=model_for_direct_effect_XY ));
-    } else {
+    } else { 
       return(beta_estimate);
     }
   } 
@@ -429,6 +456,7 @@ funreg_mediation <- function(data,
                                                  indices=1:nrow(wide_data),
                                                  get_details=TRUE); 
   before_boot <- Sys.time();  
+  print("Ran original results");
   boot1 <- boot(data=wide_data,
                 statistic=analyze_data_for_mediation, 
                 R=nboot);   
@@ -446,7 +474,7 @@ funreg_mediation <- function(data,
                             beta_boot_perc_upper=boot4$percent[5],
                             boot_level=boot_level,
                             boot1=boot1,
-                            time.required=difftime(after_boot,before_boot));
+                            time_required=difftime(after_boot,before_boot));
   answer <- list(original_results=original_results,
                  bootstrap_results=bootstrap_results);
   class(answer) <- "funreg_mediation";
