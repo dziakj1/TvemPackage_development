@@ -177,18 +177,21 @@ tvem <- function(data,
       family <- poisson();
     }
   }
+  orig_formula <- formula; 
   the_terms <- terms(formula);
   whether_intercept <- attr(the_terms,"intercept");
   if (whether_intercept != 1) {
     stop("An intercept function is required in the current version of this function")
   }
-  formula_variable_names <- attr(attr(the_terms,"factors"),"dimnames")[[1]]; 
-  if (is.null (invar_effects)) {
-    invar_effects_names <- NULL;
+  formula_variable_names <- all.vars(formula);
+  #formula_variable_names <- attr(attr(the_terms,"factors"),"dimnames")[[1]]; 
+  if (is.null(invar_effects)) {
+    num_invar_effects <- 0;
+    invar_effects_names <- NA;
   } else {
     invar_effects_names <- attr(terms(invar_effects),"term.labels");
+    num_invar_effects <- length(invar_effects_names);
   }
-  num_invar_effects <- length(invar_effects_names);
   data_for_analysis <- as.data.frame(eval.parent(data)); 
   used_listwise_deletion <- FALSE;
   names_to_check <- c(id_variable_name,
@@ -210,9 +213,15 @@ tvem <- function(data,
   id_variable <- data_for_analysis[,id_variable_name];
   time_variable <- data_for_analysis[,time_variable_name];
   response_name <- formula_variable_names[[1]];
-  num_varying_effects <- length(formula_variable_names)-1; # not including intercept;
+  if (length(formula_variable_names)<=1) {
+    num_varying_effects <- 0;
+  } else {
+    num_varying_effects <- length(formula_variable_names)-1; # not including intercept;
+  }
   if (num_varying_effects>0) {
     varying_effects_names <- c(formula_variable_names[2:(1+num_varying_effects)]);
+  } else {
+    varying_effects_names <- NA;
   }
   if (length(num_knots)>1) {
     stop("Please specify a single number for num_knots.")
@@ -238,11 +247,18 @@ tvem <- function(data,
   # This function is bam (big generalized additive models) in the  
   # mgcv (Mixed GAM Computation Vehicle) package by Simon Wood of R Project.
   ##################################
-  bam_formula <- as.formula(paste(response_name," ~ ", "1"));
-  if (length(intersect(invar_effects_names,
-                       varying_effects_names))>0) {
-    stop(paste("Please do not specify the same variable",
-               "as having time-varying and time-invariant effects."));
+  if (num_invar_effects>0 | num_varying_effects>0) {
+    bam_formula <- as.formula(paste(response_name," ~ ", "1"));
+  } else {
+    bam_formula <- orig_formula;
+  }   
+  #print(bam_formula);
+  if (num_invar_effects>0 & num_varying_effects>0) {
+    if (length(intersect(invar_effects_names,
+                         varying_effects_names))>0) {
+      stop(paste("Please do not specify the same variable",
+                 "as having time-varying and time-invariant effects."));
+    }
   }
   if (num_varying_effects>0) {
     for (i in 1:num_varying_effects) {
@@ -286,9 +302,9 @@ tvem <- function(data,
       bam_formula <- update(bam_formula,as.formula(new_text));
     }
   } 
+  #print(bam_formula);
   model1 <- bam(bam_formula,
-                data=data_for_analysis,
-                gamma=1);
+                data=data_for_analysis);
   ##################################
   # Extract coefficient estimates;
   ##################################
@@ -330,8 +346,9 @@ tvem <- function(data,
   for (i in unique(id_variable[which(!is.na(id_variable))])) {
     these <- which(id_variable==i); 
     if (length(these)>0) {
+      #print(c(nrow(design),these));
       meat <- meat + tcrossprod(crossprod(
-        design[these,],model1$residuals[these]));
+        design[these,,drop=FALSE],model1$residuals[these ]));
     }
   } 
   sandwich <- bread %*% meat %*% bread;  
