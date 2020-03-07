@@ -136,7 +136,7 @@ tvem <- function(data,
                  # number of interior knots per function (not counting exterior knots);
                  spline_order=3,
                  # shape of function between knots, with default of 3 for cubic;
-                 penalty_function_order=2,
+                 penalty_function_order=1,
                  grid=100,
                  alpha=.05
 ) {   
@@ -148,6 +148,9 @@ tvem <- function(data,
   m$invar_effects <- NULL;
   m$family <- NULL;
   m$grid <- NULL;
+  m$num_knots <- NULL;
+  m$penalty_function_order <- NULL;
+  m$alpha <- NULL;
   if (is.matrix(eval.parent(m$data))) {
     m$data <- as.data.frame(data);
   }
@@ -304,7 +307,8 @@ tvem <- function(data,
   } 
   #print(bam_formula);
   model1 <- bam(bam_formula,
-                data=data_for_analysis);
+                data=data_for_analysis,
+                family=family);
   ##################################
   # Extract coefficient estimates;
   ##################################
