@@ -37,7 +37,10 @@ print.tvem <- function(the_tvem, ornate=TRUE) {
   cat(divider);
   cat("Back-end model fitted in mgcv::bam function: \n")
   print(summary(the_tvem$back_end_model));
-  cat("Note:  'Approximate significance of smooth terms' refers to \n");
-  cat("  whether the estimated effects are significantly time-varying. \n");
+  cat("Note:  
+      Tests of 'Parametric coefficients' for TVEM coefficient functions here
+      can be interpreted as testing whether the relationship is significant at time zero.  
+      Tests of 'Approximate significance of smooth terms' refer to whether it differs 
+      at other times relative to time zero. \n"); 
   cat(divider);
 }
