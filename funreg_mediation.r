@@ -48,6 +48,10 @@
 #' @param nboot Number of bootstrap samples for bootstrap significance test of the overall effect.  This
 #' test is done using the boot function from the boot package by Angelo Canty and Brian Ripley.  It differs somewhat from the bootstrap approach used in a similar context by Lindquist (2012). 
 #' @param boot_level One minus the nominal coverage to be attempted for the bootstrap confidence interval estimates.
+#' @param tvem_spline_order Input to be passed on to the TVEM function
+#' @param tvem_penalty_order Input to be passed on to the TVEM function
+#' @param tvem_penalize Input to be passed on to the TVEM function
+#' 
 #' 
 #' @return An object of type funreg_mediation.  The components of an object of 
 #'   type funreg_mediation are as follows:
@@ -109,10 +113,12 @@ funreg_mediation <- function(data,
                              tve_covariates_on_mediator=NULL,
                              tie_covariates_on_mediator=NULL,
                              covariates_on_outcome=NULL,
+                             tvem_penalize=TRUE,
                              tvem_penalty_order=1,
+                             tvem_spline_order=3,
+                             tvem_num_knots=NULL,
                              logistic=FALSE, # FALSE for numerical outcome, TRUE for dichotomous 0/1;
                              nboot=199,
-                             tvem_num_knots=NULL,
                              boot_level=.05) {    
   #-------------------------------------------;
   #--- PROCESSING OF INPUT -------------------;
@@ -128,6 +134,8 @@ funreg_mediation <- function(data,
   m$logistic <- NULL;
   m$tvem_num_knots <- NULL;
   m$tvem_penalty_order <- NULL;
+  m$tvem_spline_order <- NULL;
+  m$tvem_penalize <- NULL;
   m$grid <- NULL;
   m$nboot <- NULL;
   if (is.matrix(eval.parent(m$data))) {
@@ -408,7 +416,9 @@ funreg_mediation <- function(data,
                       time=time,
                       id=id,
                       invar_effects=tvem_formula2,
+                      spline_order=tvem_spline_order,
                       penalty_function_order=tvem_penalty_order,
+                      penalize=tvem_penalize,
                       num_knots=tvem_num_knots,
                       grid=time_grid_for_fitting);
     } else {
@@ -417,7 +427,9 @@ funreg_mediation <- function(data,
                                        time=time,
                                        id=id,
                                        invar_effects=tvem_formula2,
+                                       spline_order=tvem_spline_order,
                                        penalty_function_order=tvem_penalty_order,
+                                       penalize=tvem_penalize,
                                        num_knots=tvem_num_knots,
                                        grid=time_grid_for_fitting));
     }

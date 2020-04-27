@@ -91,6 +91,7 @@
 #'  @param grid The number of points at which the spline coefficients
 #'  will be estimated, for the purposes of the pointwise estimates and 
 #'  pointwise standard errors to be included in the output object.
+#'  @param penalize Whether to add a complexity penalty; TRUE or FALSE
 #'  @param alpha  One minus the nominal coverage for 
 #'   the pointwise confidence intervals to be constructed.  Note that a 
 #'   multiple comparisons correction is not applied.  Also, in some cases
@@ -98,6 +99,17 @@
 #'   because of uncertainty in the tuning parameter and risk of overfitting.
 #'   These problems are not unique to TVEM but are found in many curve-
 #'   fitting situations.  
+#'  @param basis Form of function basis (an optional argument about computational 
+#'  details passed on to the mgcv::s function as bs=).  EXPERIMENTAL -- PLEASE
+#'  DON'T USE THIS.
+#'  @param method Fitting method (an optional argument about computational 
+#'  details passed on to the mgcv::bam function as method).   EXPERIMENTAL -- PLEASE
+#'  DON'T USE THIS.
+#'  @param use_naive_se  Save time by using a simpler, less valid formula for 
+#'  standard errors.  Only do this if you are doing this TVEM inside a loop for
+#'  bootstrapping or model selection and plan to ignore its standard errors.
+#'  @param print_gam_formula  Print the formula used to do the back-end calculations
+#'  in the bam (large data gam) function in the mgcv package.
 #' 
 #' @return An object of type tvem.  The components of an object of 
 #'   type tvem are as follows:
@@ -138,7 +150,12 @@ tvem <- function(data,
                  # shape of function between knots, with default of 3 for cubic;
                  penalty_function_order=1,
                  grid=100,
-                 alpha=.05
+                 penalize=TRUE,
+                 alpha=.05,
+                 basis="ps",
+                 method="fREML",
+                 use_naive_se=FALSE,
+                 print_gam_formula=FALSE
 ) {   
   ##################################
   # Process the input;
@@ -149,8 +166,14 @@ tvem <- function(data,
   m$family <- NULL;
   m$grid <- NULL;
   m$num_knots <- NULL;
+  m$spline_order <- NULL;
   m$penalty_function_order <- NULL;
   m$alpha <- NULL;
+  m$penalize <- NULL;
+  m$basis <- NULL;
+  m$method <- NULL;
+  m$use_naive_se <- NULL;
+  m$print_gam_formula <- NULL;
   if (is.matrix(eval.parent(m$data))) {
     m$data <- as.data.frame(data);
   }
@@ -277,22 +300,17 @@ tvem <- function(data,
       # add effect of each non-time-varying-effect to the formula
     }
   }
-  new_text <- paste("~ . + s(",time_variable_name,",bs='ps',by=NA,pc=0,",
-                    "m=c(",
-                    spline_order-1,
-                    ",",
-                    penalty_function_order,
-                    "),",
+  new_text <- paste("~ . + s(",time_variable_name,",bs='",basis,"',by=NA,pc=0,",
                     "k=",
-                    num_knots+spline_order+1,
-                    ")",sep=""); 
+                    num_knots+spline_order+1,",fx=",
+                    ifelse(penalize,"FALSE","TRUE"),")",sep=""); 
   # for time-varying intercept; 
   bam_formula <- update(bam_formula,as.formula(new_text)); 
   # for time-varying intercept;
   if (num_varying_effects>0) {
     for (i in 1:num_varying_effects) {
       this_covariate_name <- varying_effects_names[i];
-      new_text <- paste("~ . + s(",time_variable_name,",bs='ps',by=",
+      new_text <- paste("~ . + s(",time_variable_name,",bs='",basis,"',by=",
                         this_covariate_name,
                         ", pc=0,",
                         "m=c(",
@@ -300,15 +318,16 @@ tvem <- function(data,
                         ",",
                         penalty_function_order,"),",
                         "k=",
-                        num_knots+spline_order+1,")",
-                        sep=""); 
+                        num_knots+spline_order+1,",fx=",ifelse(penalize,"FALSE","TRUE"),
+                        ")",sep=""); 
       bam_formula <- update(bam_formula,as.formula(new_text));
     }
   } 
-  #print(bam_formula);
+  if (print_gam_formula) {print(bam_formula);}
   model1 <- bam(bam_formula,
                 data=data_for_analysis,
-                family=family);
+                family=family,
+                method=method);
   ##################################
   # Extract coefficient estimates;
   ##################################
@@ -343,19 +362,27 @@ tvem <- function(data,
   temp_data[,time_variable_name] <- time_grid;
   grid_design <- predict.bam(model1,type="lpmatrix",newdata = temp_data); 
   # Working independence variance estimates (will make sandwich):
-  bread <- model1$Vc;
+  if (penalize) {
+    bread <- model1$Vc;
+  } else {
+    bread <- model1$Vp;
+  }
   npar <- length(model1$coefficients);
-  meat <- matrix(0,npar,npar);  # apologies to vegetarians -- 
-  # peanut butter is also fine!
-  for (i in unique(id_variable[which(!is.na(id_variable))])) {
-    these <- which(id_variable==i); 
-    if (length(these)>0) {
-      #print(c(nrow(design),these));
-      meat <- meat + tcrossprod(crossprod(
-        design[these,,drop=FALSE],model1$residuals[these ]));
-    }
-  } 
-  sandwich <- bread %*% meat %*% bread;  
+  if (use_naive_se) {
+    sandwich <- bread;
+  } else {
+    meat <- matrix(0,npar,npar);  # apologies to vegetarians -- 
+    # peanut butter or vegetables are also fine!
+    for (i in unique(id_variable[which(!is.na(id_variable))])) {
+      these <- which(id_variable==i); 
+      if (length(these)>0) {
+        #print(c(nrow(design),these));
+        meat <- meat + tcrossprod(crossprod(
+          design[these,,drop=FALSE],model1$residuals[these ]));
+      }
+    }  
+    sandwich <- bread %*% meat %*% bread;  
+  }
   general_term_name <- sub(" .*","", 
                            gsub(x=names(model1$coefficients),
                                 pattern="[.]",
