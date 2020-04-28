@@ -81,8 +81,11 @@
 #'   For a binary outcome, use binomial().  The parentheses after the
 #'   family name are there because it is actually a built-in R object.
 #'  @param num_knots The number of interior knots assumed per spline function,
-#'   not counting exterior knots.  Because of the automatic complexity 
-#'   penalty, it is generally okay to leave num_knots at its default.    
+#'   not counting exterior knots.   The user can either specify a single 
+#'   for each function (e.g., 3), or else a vector of numbers, the first
+#'   for the intercept and the others for the time-varying covariates 
+#'   (e.g., c(2,3,2)). If penalized=TRUE is used, it is
+#'   probably okay to leave num_knots at its default.
 #'  @param spline_order The shape of the function between knots, with a
 #'   default of 3 representing cubic spline.
 #'  @param penalty_function_order The order of the penalty function (see 
@@ -249,9 +252,18 @@ tvem <- function(data,
   } else {
     varying_effects_names <- NA;
   }
-  if (length(num_knots)>1) {
-    stop("Please specify a single number for num_knots.")
+  if (length(num_knots)==1) {
+    num_knots_by_effect <- rep(num_knots, 1+num_varying_effects);
+  } else {
+    if (length(num_knots)==1+num_varying_effects) {
+      num_knots_by_effect <- num_knots;
+    } else {
+      stop(paste("Please either provide a single num_knots, or else a vector with",
+            "values for each time-varying coefficient including the intercept."));
+    }
   };
+  print("num knots by effect:");
+  print(num_knots_by_effect);
   crit_value <- qnorm(1-alpha/2);
   ##################################################
   # Construct regular grid for plotting fitted coefficient functions;
@@ -302,7 +314,7 @@ tvem <- function(data,
   }
   new_text <- paste("~ . + s(",time_variable_name,",bs='",basis,"',by=NA,pc=0,",
                     "k=",
-                    num_knots+spline_order+1,",fx=",
+                    num_knots_by_effect[1]+spline_order+1,",fx=",
                     ifelse(penalize,"FALSE","TRUE"),")",sep=""); 
   # for time-varying intercept; 
   bam_formula <- update(bam_formula,as.formula(new_text)); 
@@ -318,7 +330,7 @@ tvem <- function(data,
                         ",",
                         penalty_function_order,"),",
                         "k=",
-                        num_knots+spline_order+1,",fx=",ifelse(penalize,"FALSE","TRUE"),
+                        num_knots_by_effect[1+i]+spline_order+1,",fx=",ifelse(penalize,"FALSE","TRUE"),
                         ")",sep=""); 
       bam_formula <- update(bam_formula,as.formula(new_text));
     }
@@ -487,12 +499,16 @@ tvem <- function(data,
   ##################################
   # Return answers;
   ##################################
-  model_information <- list(whether_intercept=whether_intercept,
+  nsub <- length(unique(id_variable[which(!is.na(id_variable))]));
+  model_information <- list(whether_intercept=(whether_intercept==1),
                             response_name=response_name,
                             num_varying_effects=num_varying_effects,
                             varying_effects_names=varying_effects_names,
                             num_invar_effects=num_invar_effects,
-                            invar_effects_names=invar_effects_names);
+                            invar_effects_names=invar_effects_names,
+                            n_subjects=nsub,
+                            pseudo_aic=AIC(model1),
+                            pseudo_bic=AIC(model1,k=log(nsub)));
   answer <- list(time_grid=time_grid,
                  grid_fitted_coefficients=grid_fitted_coefficients,
                  invar_effects_estimates=invar_effects_estimates,
