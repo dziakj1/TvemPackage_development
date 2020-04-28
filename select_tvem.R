@@ -1,6 +1,7 @@
 select_tvem <- function(maxKnots=5,
                         keepGoingIfTooFew=TRUE,
                         use_bic=FALSE,
+                        use_correction=FALSE,
                         penalize=FALSE,
                         ...) { 
   #' select_tvem:  Select number of knots for an unpenalized TVEM.
@@ -33,15 +34,25 @@ select_tvem <- function(maxKnots=5,
     more_args$use_naive_se <- TRUE;
     more_args$print_gam_formula <- FALSE; 
     ans1 <- suppressWarnings(do.call(tvem, more_args));  
-    if (use_bic==FALSE) {
-      # use AIC;
-      IC_values[num_knots_values_index] <- ans1$back_end_model$deviance + 
-        2*sum(ans1$back_end_model$edf);
-    }
-    if (use_bic==TRUE) {
-      # use BIC;
-      IC_values[num_knots_values_index] <- ans1$back_end_model$deviance + 
-        nsub*sum(ans1$back_end_model$edf);
+    b <- ans1$back_end_model;
+    if (use_correction) {
+      if (use_bic==FALSE) {
+        # use AIC;
+        IC_values[num_knots_values_index] <- AIC(b);
+      }
+      if (use_bic==TRUE) {
+        # use BIC;
+        IC_values[num_knots_values_index] <- AIC(b, k=nsub);
+      }
+    } else {
+      if (use_bic==FALSE) {
+        # use AIC;
+        IC_values[num_knots_values_index] <- 2*logLik(b)+2*sum(b$edf);
+      }
+      if (use_bic==TRUE) {
+        # use BIC;
+        IC_values[num_knots_values_index] <- 2*logLik(b, k=nsub)+nsuyb*sum(b$edf);
+      }
     }
     if (num_knots_values_index==length(num_knots_values)) {
       # If you have come to end of list of values to try for number of knots
@@ -63,5 +74,5 @@ select_tvem <- function(maxKnots=5,
   ICsTable <- cbind(knots=num_knots_values, ic=IC_values);
   print(ICsTable);
   return(list(ICsTable=ICsTable,
-         bestFit=ans1));
+              bestFit=ans1));
 }
