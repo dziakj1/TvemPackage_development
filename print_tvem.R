@@ -27,7 +27,9 @@ print.tvem <- function(the_tvem, ornate=TRUE) {
             min(the_tvem$time_grid),
             "to",
             max(the_tvem$time_grid)),"\n");
-  cat("Effects specified as time-varying: \n       ");
+  cat("Number of subjects:  ");
+  cat(paste(the_tvem$model_information$n_subjects));
+  cat("\nEffects specified as time-varying: \n       ");
   cat(paste(names(the_tvem$grid_fitted_coefficients),sep=" ",collapse=", ")); 
   cat("\n (use plot_tvem function to view their plots)");
   if (!is.null(the_tvem$invar_effects_estimates)) {
@@ -42,5 +44,8 @@ print.tvem <- function(the_tvem, ornate=TRUE) {
       can be interpreted as testing whether the relationship is significant at time zero.  
       Tests of 'Approximate significance of smooth terms' refer to whether it differs 
       at other times relative to time zero. \n"); 
+  cat(divider);
+  cat(paste("Pseudolikelihood AIC:",round(the_tvem$model_information$pseudo_aic,2)));
+  cat(paste("\nPseudolikelihood BIC:",round(the_tvem$model_information$pseudo_bic,2),"\n"));
   cat(divider);
 }
