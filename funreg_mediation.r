@@ -51,7 +51,7 @@
 #' @param tvem_spline_order Input to be passed on to the TVEM function
 #' @param tvem_penalty_order Input to be passed on to the TVEM function
 #' @param tvem_penalize Input to be passed on to the TVEM function
-#' 
+#' @param tvem_num_knots Input to be passed on to the TVEM function
 #' 
 #' @return An object of type funreg_mediation.  The components of an object of 
 #'   type funreg_mediation are as follows:
@@ -116,7 +116,7 @@ funreg_mediation <- function(data,
                              tvem_penalize=TRUE,
                              tvem_penalty_order=1,
                              tvem_spline_order=3,
-                             tvem_num_knots=NULL,
+                             tvem_num_knots=1,
                              logistic=FALSE, # FALSE for numerical outcome, TRUE for dichotomous 0/1;
                              nboot=199,
                              boot_level=.05) {    
