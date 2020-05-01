@@ -39,4 +39,9 @@ print.funreg_mediation <- function(fitted_funmed_model) {
     print(fitted_funmed_model$original_results$tvem_IC_table);
     cat("======================================================= \n");
   }
+  if(!is.null(fitted_funmed_model$bootstrap_results$num_knots_from_bootstraps)) {
+    cat("Numbers of interior knots selected in bootstrap samples:\n");
+    print(fitted_funmed_model$bootstrap_results$num_knots_from_bootstraps);
+    cat("======================================================= \n");
+  }  
 }

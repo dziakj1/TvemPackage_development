@@ -424,56 +424,56 @@ funreg_mediation <- function(data,
     local_long_data <- local_long_data[which(!is.na(local_long_data$mediator)),];
     # listwise deletion to remove empty observations; 
     if (tvem_do_loop) {
-       tvem_results_list <- list();
-    max_knots <- tvem_num_knots;
-    IC_values <- rep(Inf,max_knots+1);
-    for (this_num_knots in 0:max_knots) {
-       tvem_XM <- suppressWarnings(tvem(data=local_long_data,
-                       formula=tvem_formula1,
-                       time=time,
-                       id=id,
-                       invar_effects=tvem_formula2,
-                       spline_order=tvem_spline_order,
-                       penalty_function_order=tvem_penalty_order,
-                       penalize=tvem_penalize,
-                       num_knots=this_num_knots,
-                       grid=time_grid_for_fitting));
-       IC_values[1+this_num_knots] <- ifelse(tvem_use_bic,
-                                             tvem_XM$model_information$pseudo_bic,
-                                             tvem_XM$model_information$pseudo_aic);
-       tvem_results_list[[1+this_num_knots]] <- tvem_XM;
-    }
-    IC_table <- data.frame(0:max_knots, IC_values);
-    colnames(IC_table) <- c("Number_Of_Interior_Knots",ifelse(tvem_use_bic,
-                                                              "Pseudo_BIC",
-                                                              "Pseudo_AIC"));
-    tvem_XM <- tvem_results_list[[which.min(IC_values)]];   
-
+      tvem_results_list <- list();
+      max_knots <- tvem_num_knots;
+      IC_values <- rep(Inf,max_knots+1);
+      for (this_num_knots in 0:max_knots) {
+        tvem_XM <- suppressWarnings(tvem(data=local_long_data,
+                                         formula=tvem_formula1,
+                                         time=time,
+                                         id=id,
+                                         invar_effects=tvem_formula2,
+                                         spline_order=tvem_spline_order,
+                                         penalty_function_order=tvem_penalty_order,
+                                         penalize=tvem_penalize,
+                                         num_knots=this_num_knots,
+                                         grid=time_grid_for_fitting));
+        IC_values[1+this_num_knots] <- ifelse(tvem_use_bic,
+                                              tvem_XM$model_information$pseudo_bic,
+                                              tvem_XM$model_information$pseudo_aic);
+        tvem_results_list[[1+this_num_knots]] <- tvem_XM;
+      }
+      IC_table <- data.frame(0:max_knots, IC_values);
+      colnames(IC_table) <- c("Number_Of_Interior_Knots",ifelse(tvem_use_bic,
+                                                                "Pseudo_BIC",
+                                                                "Pseudo_AIC"));
+      tvem_XM <- tvem_results_list[[which.min(IC_values)]];   
+      
     } else {
-    if (get_details) {
-      tvem_XM <- tvem(data=local_long_data,
-                      formula=tvem_formula1,
-                      time=time,
-                      id=id,
-                      invar_effects=tvem_formula2,
-                      spline_order=tvem_spline_order,
-                      penalty_function_order=tvem_penalty_order,
-                      penalize=tvem_penalize,
-                      num_knots=tvem_num_knots,
-                      grid=time_grid_for_fitting);
-    } else {
-      tvem_XM <- suppressWarnings(tvem(data=local_long_data,
-                                       formula=tvem_formula1,
-                                       time=time,
-                                       id=id,
-                                       invar_effects=tvem_formula2,
-                                       spline_order=tvem_spline_order,
-                                       penalty_function_order=tvem_penalty_order,
-                                       penalize=tvem_penalize,
-                                       num_knots=tvem_num_knots,
-                                       grid=time_grid_for_fitting));
+      if (get_details) {
+        tvem_XM <- tvem(data=local_long_data,
+                        formula=tvem_formula1,
+                        time=time,
+                        id=id,
+                        invar_effects=tvem_formula2,
+                        spline_order=tvem_spline_order,
+                        penalty_function_order=tvem_penalty_order,
+                        penalize=tvem_penalize,
+                        num_knots=tvem_num_knots,
+                        grid=time_grid_for_fitting);
+      } else {
+        tvem_XM <- suppressWarnings(tvem(data=local_long_data,
+                                         formula=tvem_formula1,
+                                         time=time,
+                                         id=id,
+                                         invar_effects=tvem_formula2,
+                                         spline_order=tvem_spline_order,
+                                         penalty_function_order=tvem_penalty_order,
+                                         penalize=tvem_penalize,
+                                         num_knots=tvem_num_knots,
+                                         grid=time_grid_for_fitting));
+      }
     }
-  }
     gamma_int_estimate <- tvem_XM$grid_fitted_coefficients[[1]]$estimate; 
     gamma_int_se <- tvem_XM$grid_fitted_coefficients[[1]]$standard_error;
     gamma_X_estimate <- tvem_XM$grid_fitted_coefficients[[2]]$estimate; 
@@ -485,30 +485,33 @@ funreg_mediation <- function(data,
     beta_estimate <- mean(gamma_X_estimate*alpha_M_estimate);
     if (get_details) {
       answer_list <- list(time_grid=time_grid_for_fitting,
-                  gamma_int_estimate=gamma_int_estimate,
-                  gamma_int_se=gamma_int_se,
-                  gamma_X_estimate=gamma_X_estimate,
-                  gamma_X_se=gamma_X_se,
-                  alpha_int_estimate=alpha_int_estimate,  
-                  alpha_int_se=alpha_int_se, 
-                  alpha_X_estimate=alpha_X_estimate, 
-                  alpha_X_se=alpha_X_se,
-                  alpha_M_estimate=alpha_M_estimate,   
-                  alpha_M_se=alpha_M_se,   
-                  alpha_M_pvalue=alpha_M_pvalue,
-                  delta_int_estimate=delta_int_estimate,
-                  delta_int_se=delta_int_se,
-                  delta_X_estimate=delta_X_estimate,
-                  delta_X_se=delta_X_se,
-                  beta_estimate=beta_estimate,
-                  tvem_XM_details=tvem_XM,
-                  funreg_MY_details=funreg_MY,
-                  direct_effect_details=model_for_direct_effect_XY); 
+                          gamma_int_estimate=gamma_int_estimate,
+                          gamma_int_se=gamma_int_se,
+                          gamma_X_estimate=gamma_X_estimate,
+                          gamma_X_se=gamma_X_se,
+                          alpha_int_estimate=alpha_int_estimate,  
+                          alpha_int_se=alpha_int_se, 
+                          alpha_X_estimate=alpha_X_estimate, 
+                          alpha_X_se=alpha_X_se,
+                          alpha_M_estimate=alpha_M_estimate,   
+                          alpha_M_se=alpha_M_se,   
+                          alpha_M_pvalue=alpha_M_pvalue,
+                          delta_int_estimate=delta_int_estimate,
+                          delta_int_se=delta_int_se,
+                          delta_X_estimate=delta_X_estimate,
+                          delta_X_se=delta_X_se,
+                          beta_estimate=beta_estimate,
+                          tvem_XM_details=tvem_XM,
+                          funreg_MY_details=funreg_MY,
+                          direct_effect_details=model_for_direct_effect_XY); 
       if (tvem_do_loop) {
-      answer_list$tvem_IC_table <- IC_table; 
+        answer_list$tvem_IC_table <- IC_table; 
       }
       return(answer_list);
     } else { 
+      if (tvem_do_loop) {
+        ICs_table_from_bootstraps <<- rbind(ICs_table_from_bootstraps,IC_table[,2]);
+      }
       return(beta_estimate);
     }
   } 
@@ -519,6 +522,7 @@ funreg_mediation <- function(data,
                                                  indices=1:nrow(wide_data),
                                                  get_details=TRUE); 
   before_boot <- Sys.time();  
+  ICs_table_from_bootstraps <- NULL;
   print("Ran original results");
   boot1 <- boot(data=wide_data,
                 statistic=analyze_data_for_mediation, 
@@ -538,6 +542,11 @@ funreg_mediation <- function(data,
                             boot_level=boot_level,
                             boot1=boot1,
                             time_required=difftime(after_boot,before_boot));
+  if (tvem_do_loop) {
+    colnames(ICs_table_from_bootstraps) <- paste(0:(ncol(ICs_table_from_bootstraps)-1),"InteriorKnots",sep="");
+    bootstrap_results$ICs_table_from_bootstraps <- ICs_table_from_bootstraps;
+    bootstrap_results$num_knots_from_bootstraps <- table(paste(apply(ICs_table_from_bootstraps,1,which.min)+1,"knots"));
+  }
   answer <- list(observed_time_grid_for_debug=observed_time_grid,
                  wide_data_for_debug=wide_data,
                  original_results=original_results,
