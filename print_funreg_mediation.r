@@ -34,4 +34,9 @@ print.funreg_mediation <- function(fitted_funmed_model) {
   cat("Parametric model for Predicting Outcome from Treatment and Mediator: \n");
   print(summary(fitted_funmed_model$original_results$direct_effect_details));
   cat("======================================================= \n");
+  if(!is.null(fitted_funmed_model$original_results$tvem_IC_table)) {
+    cat("ICs table for selecting number of interior knots in TVEM:\n");
+    print(fitted_funmed_model$original_results$tvem_IC_table);
+    cat("======================================================= \n");
+  }
 }

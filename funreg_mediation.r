@@ -46,12 +46,21 @@
 #' @param logistic Whether the outcome should be modeled as dichotomous with a logistic model (TRUE), 
 #' or numerical with a normal model (FALSE).  So far these are the only options we have implemented.
 #' @param nboot Number of bootstrap samples for bootstrap significance test of the overall effect.  This
-#' test is done using the boot function from the boot package by Angelo Canty and Brian Ripley.  It differs somewhat from the bootstrap approach used in a similar context by Lindquist (2012). 
+#' test is done using the boot function from the boot package by Angelo Canty and Brian Ripley. 
+#'  It differs somewhat from the bootstrap approach used in a similar context by Lindquist (2012). 
 #' @param boot_level One minus the nominal coverage to be attempted for the bootstrap confidence interval estimates.
 #' @param tvem_spline_order Input to be passed on to the TVEM function
 #' @param tvem_penalty_order Input to be passed on to the TVEM function
 #' @param tvem_penalize Input to be passed on to the TVEM function
-#' @param tvem_num_knots Input to be passed on to the TVEM function
+#' @param tvem_do_loop Whether to use a loop to select the number of knots with a pseudo-AIC or pseudo-BIC
+#' @param tvem_num_knots  If tvem_do_loop is FALSE, then tvem_num_knots is passed on to the tvem function as num_knots, 
+#' the number of interior knots for the B-splines.  If tvem_do_loop is TRUE then tvem_num_knots is reinterpreted as the highest number of interior knots to try.  This can be either 
+#' an integer or a vector if tvem_do_loop is FALSE, but must be an integer if tvem_do_loop is TRUE. 
+#' @param tvem_use_bic This parameter only matters if tvem_do_loop is TRUE.  If  tvem_do_loop is TRUE
+#'  and tvem_use_bic is TRUE, then the information criterion used will be a pseudolikelihood version of BIC. 
+#'  If  tvem_do_loop is TRUE #'  and tvem_use_bic is FALSE, then the information criterion used will be
+#'   a pseudolikelihood version of AIC instead.
+#'  If tvem_do_loop is FALSE then tvem_use_bic is ignored.
 #' 
 #' @return An object of type funreg_mediation.  The components of an object of 
 #'   type funreg_mediation are as follows:
@@ -116,7 +125,9 @@ funreg_mediation <- function(data,
                              tvem_penalize=TRUE,
                              tvem_penalty_order=1,
                              tvem_spline_order=3,
-                             tvem_num_knots=1,
+                             tvem_num_knots=3, 
+                             tvem_do_loop=FALSE,
+                             tvem_use_bic=FALSE,
                              logistic=FALSE, # FALSE for numerical outcome, TRUE for dichotomous 0/1;
                              nboot=199,
                              boot_level=.05) {    
@@ -136,6 +147,7 @@ funreg_mediation <- function(data,
   m$tvem_penalty_order <- NULL;
   m$tvem_spline_order <- NULL;
   m$tvem_penalize <- NULL;
+  m$tvem_do_loop <- NULL;
   m$grid <- NULL;
   m$nboot <- NULL;
   if (is.matrix(eval.parent(m$data))) {
@@ -360,8 +372,9 @@ funreg_mediation <- function(data,
     alpha_int_se <- as.numeric(summary(funreg_MY)$se["(Intercept)"]);
     alpha_X_estimate <-  as.numeric(funreg_MY$coefficient["wide_treatment"]);
     alpha_X_se <- as.numeric(summary(funreg_MY)$se["wide_treatment"]);
-    alpha_M_estimate <- as.numeric(coef(funreg_MY)[,"value"]); 
-    alpha_M_se <- coef(funreg_MY)[,"se"];
+    temp_coefs <- coef(funreg_MY, coords=list(observed_time_grid));
+    alpha_M_estimate <- as.numeric(temp_coefs[,"value"]); 
+    alpha_M_se <- as.numeric(temp_coefs[,"se"]);
     time_grid_for_fitting <- observed_time_grid;
     alpha_M_pvalue <- summary(funreg_MY)$s.table[1,"p-value"];
     #--- DIRECT EFFECT OF TREATMENT X ON OUTCOME Y ---;
@@ -410,6 +423,33 @@ funreg_mediation <- function(data,
     }
     local_long_data <- local_long_data[which(!is.na(local_long_data$mediator)),];
     # listwise deletion to remove empty observations; 
+    if (tvem_do_loop) {
+       tvem_results_list <- list();
+    max_knots <- tvem_num_knots;
+    IC_values <- rep(Inf,max_knots+1);
+    for (this_num_knots in 0:max_knots) {
+       tvem_XM <- suppressWarnings(tvem(data=local_long_data,
+                       formula=tvem_formula1,
+                       time=time,
+                       id=id,
+                       invar_effects=tvem_formula2,
+                       spline_order=tvem_spline_order,
+                       penalty_function_order=tvem_penalty_order,
+                       penalize=tvem_penalize,
+                       num_knots=this_num_knots,
+                       grid=time_grid_for_fitting));
+       IC_values[1+this_num_knots] <- ifelse(tvem_use_bic,
+                                             tvem_XM$model_information$pseudo_bic,
+                                             tvem_XM$model_information$pseudo_aic);
+       tvem_results_list[[1+this_num_knots]] <- tvem_XM;
+    }
+    IC_table <- data.frame(0:max_knots, IC_values);
+    colnames(IC_table) <- c("Number_Of_Interior_Knots",ifelse(tvem_use_bic,
+                                                              "Pseudo_BIC",
+                                                              "Pseudo_AIC"));
+    tvem_XM <- tvem_results_list[[which.min(IC_values)]];   
+
+    } else {
     if (get_details) {
       tvem_XM <- tvem(data=local_long_data,
                       formula=tvem_formula1,
@@ -433,14 +473,18 @@ funreg_mediation <- function(data,
                                        num_knots=tvem_num_knots,
                                        grid=time_grid_for_fitting));
     }
+  }
     gamma_int_estimate <- tvem_XM$grid_fitted_coefficients[[1]]$estimate; 
     gamma_int_se <- tvem_XM$grid_fitted_coefficients[[1]]$standard_error;
     gamma_X_estimate <- tvem_XM$grid_fitted_coefficients[[2]]$estimate; 
     gamma_X_se <- tvem_XM$grid_fitted_coefficients[[2]]$standard_error; 
     # #--- MEDIATED EFFECT OF TREATMENT X THROUGH MEDIATOR M ON OUTCOME Y ---;
+    if (length(gamma_X_estimate)!=length(alpha_M_estimate)) {
+      stop("Dimension error in functional mediation function;")
+    }
     beta_estimate <- mean(gamma_X_estimate*alpha_M_estimate);
-    if (get_details) { 
-      return(list(time_grid=time_grid_for_fitting,
+    if (get_details) {
+      answer_list <- list(time_grid=time_grid_for_fitting,
                   gamma_int_estimate=gamma_int_estimate,
                   gamma_int_se=gamma_int_se,
                   gamma_X_estimate=gamma_X_estimate,
@@ -459,7 +503,11 @@ funreg_mediation <- function(data,
                   beta_estimate=beta_estimate,
                   tvem_XM_details=tvem_XM,
                   funreg_MY_details=funreg_MY,
-                  direct_effect_details=model_for_direct_effect_XY ));
+                  direct_effect_details=model_for_direct_effect_XY); 
+      if (tvem_do_loop) {
+      answer_list$tvem_IC_table <- IC_table; 
+      }
+      return(answer_list);
     } else { 
       return(beta_estimate);
     }
