@@ -12,103 +12,102 @@
 #' 
 #' @references
 #' Baron, R.M., & Kenny, D.A. (1986). The moderator-mediator variable
-#'  distinction in social psychological research: Conceptual, strategic, 
-#'  and statistical considerations. Journal of Personality & Social 
-#'  Psychology, 51: 1173-1182.
+#' distinction in social psychological research: Conceptual, strategic, 
+#' and statistical considerations. Journal of Personality & Social 
+#' Psychology, 51: 1173-1182.
 #' Coffman, D. L., Dziak, J. J., Li, R., & Piper, M. (2019). Functional 
-#'  regression mediation analysis with application to a smoking 
-#'  cessation intervention. Joint Statistical Meetings presentation, 
-#'  August 2019.
+#' regression mediation analysis with application to a smoking 
+#' cessation intervention. Joint Statistical Meetings presentation, 
+#' August 2019.
 #' Dziak, J. J., Coffman, D. L., Reimherr, M., Petrovich, J., Li, R., 
-#'  Shiffman, S., & Shiyko, M. P. (2019). Scalar-on-function regression
-#'  for predicting distal outcomes from intensively gathered longitudinal
-#'  data: interpretability for applied scientists. Online publication, 
-#'  Statistics Surveys.
+#' Shiffman, S., & Shiyko, M. P. (2019). Scalar-on-function regression
+#' for predicting distal outcomes from intensively gathered longitudinal
+#' data: interpretability for applied scientists. Online publication, 
+#' Statistics Surveys.
 #' Goldsmith, J., Bobb, J., Crainiceanu, C., Caffo, B., and Reich, D.
-#'  (2011). Penalized functional regression. Journal of Computational 
-#'  and Graphical Statistics, 20(4), 830-851.
+#' (2011). Penalized functional regression. Journal of Computational 
+#' and Graphical Statistics, 20(4), 830-851.
 #' Lindquist, M. A. (2012). Functional Causal Mediation Analysis 
-#'  With an Application to Brain Connectivity. Journal of the American
-#'  Statistical Association, 107: 1297-1309.
+#' With an Application to Brain Connectivity. Journal of the American
+#' Statistical Association, 107: 1297-1309.
 #' 
 #' @param data The dataset containing the data to be analyzed, in long format (one row per observation, multiple per individual).
 #' @param treatment  The name of the variable containing the treatment assignment, assumed to be unidimensional (dichotomous or numerical; we recommend dichotomous with 0 for control and 1 for experimental).  The values of this variable should be the same for each row for a given subject.
-#' @param mediator The name of the mediator variable.    The values of this variable can (and should) vary within each subject.
-#' @param outcome  The name of the outcome variable.    The values of this variable should be the same for each row for a given subject.
-#' @param id  The name of the variable identifying each subject.
-#' @param time  The name of the time variable. 
-#' @param tve_covariates_on_mediator  The time-varying-effects covariates, if any, to be included in the 
+#' @param mediator The name of the mediator variable. The values of this variable can (and should) vary within each subject.
+#' @param outcome The name of the outcome variable. The values of this variable should be the same for each row for a given subject.
+#' @param id The name of the variable identifying each subject.
+#' @param time The name of the time variable. 
+#' @param tve_covariates_on_mediator The time-varying-effects covariates, if any, to be included in the 
 #' model predicting the mediator from the treatment.
-#' @param tie_covariates_on_mediator  The non-time-varying-effects covariates, if any, to be included in the 
+#' @param tie_covariates_on_mediator The non-time-varying-effects covariates, if any, to be included in the 
 #' model predicting the mediator from the treatment.
-#' @param covariates_on_outcome  The covariates, if any, to be included in the model predicting the outcome from the treatment.
+#' @param covariates_on_outcome The covariates, if any, to be included in the model predicting the outcome from the treatment.
 #' They are assumed to be subject-level (non-time-varying both in value and in effect).
 #' @param logistic Whether the outcome should be modeled as dichotomous with a logistic model (TRUE), 
-#' or numerical with a normal model (FALSE).  So far these are the only options we have implemented.
-#' @param nboot Number of bootstrap samples for bootstrap significance test of the overall effect.  This
+#' or numerical with a normal model (FALSE). So far these are the only options we have implemented.
+#' @param nboot Number of bootstrap samples for bootstrap significance test of the overall effect. This
 #' test is done using the boot function from the boot package by Angelo Canty and Brian Ripley. 
-#'  It differs somewhat from the bootstrap approach used in a similar context by Lindquist (2012). 
+#' It differs somewhat from the bootstrap approach used in a similar context by Lindquist (2012). 
 #' @param boot_level One minus the nominal coverage to be attempted for the bootstrap confidence interval estimates.
 #' @param tvem_spline_order Input to be passed on to the TVEM function
 #' @param tvem_penalty_order Input to be passed on to the TVEM function
 #' @param tvem_penalize Input to be passed on to the TVEM function
 #' @param tvem_do_loop Whether to use a loop to select the number of knots with a pseudo-AIC or pseudo-BIC
-#' @param tvem_num_knots  If tvem_do_loop is FALSE, then tvem_num_knots is passed on to the tvem function as num_knots, 
-#' the number of interior knots for the B-splines.  If tvem_do_loop is TRUE then tvem_num_knots is reinterpreted as the highest number of interior knots to try.  This can be either 
+#' @param tvem_num_knots If tvem_do_loop is FALSE, then tvem_num_knots is passed on to the tvem function as num_knots, 
+#' the number of interior knots for the B-splines. If tvem_do_loop is TRUE then tvem_num_knots is reinterpreted as the highest number of interior knots to try. This can be either 
 #' an integer or a vector if tvem_do_loop is FALSE, but must be an integer if tvem_do_loop is TRUE. 
-#' @param tvem_use_bic This parameter only matters if tvem_do_loop is TRUE.  If  tvem_do_loop is TRUE
-#'  and tvem_use_bic is TRUE, then the information criterion used will be a pseudolikelihood version of BIC. 
-#'  If  tvem_do_loop is TRUE #'  and tvem_use_bic is FALSE, then the information criterion used will be
-#'   a pseudolikelihood version of AIC instead.
-#'  If tvem_do_loop is FALSE then tvem_use_bic is ignored.
+#' @param tvem_use_bic This parameter only matters if tvem_do_loop is TRUE. If tvem_do_loop is TRUE
+#' and tvem_use_bic is TRUE, then the information criterion used will be a pseudolikelihood version of BIC. 
+#' If tvem_do_loop is TRUE and tvem_use_bic is FALSE, then the information criterion used will be
+#' a pseudolikelihood version of AIC instead. If tvem_do_loop is FALSE then tvem_use_bic is ignored.
 #' 
-#' @return An object of type funreg_mediation.  The components of an object of 
-#'   type funreg_mediation are as follows:
+#' @return An object of type funreg_mediation. The components of an object of 
+#' type funreg_mediation are as follows:
 #' \describe{
-#'   \item{original_results} The estimates from the fitted models for
-#'   predicting the mediator from the treatment, predicting the outcome from 
-#'   the mediator and treatment, and predicting the outcome from the treatment alone.
-#'   \item{bootstrap_results} The estimate and confidence interval of the indirect effect
-#'   using a bootstrap approach. 
+#' \item{original_results}{The estimates from the fitted models for
+#' predicting the mediator from the treatment, predicting the outcome from 
+#' the mediator and treatment, and predicting the outcome from the treatment alone.}
+#' \item{bootstrap_results}{The estimate and confidence interval of the indirect effect
+#' using a bootstrap approach.} 
 #' } 
 #' 
 #' The original_results component has these components within it:
 #' \describe{
-#' \item{time_grid}  Grid of time points on which the functional coefficients are estimated.
-#' \item{gamma_int_estimate}  Estimated intercept function (as a vector of estimates) from the TVEM regression of the mediator on the treatment
-#' \item{gamma_int_se}  Estimated pointwise standard errors associated with the above
-#' \item{gamma_X_estimate}  Estimated time-varying treatment effect from the TVEM regression of the mediator on the treatment
-#' \item{gamma_X_se}  Estimated pointwise standard errors associated with the above
-#' \item{alpha_int_estimate}  Estimated scalar intercept from the scalar-on-function regression of the outcome on the mediator and treatment
-#' \item{alpha_int_se}  Estimated standard error for the above
-#' \item{alpha_X_estimate}  Estimated scalar coefficient for the treatment,  from the scalar-on-function regression of the outcome on the mediator and treatment
-#' \item{alpha_X_se}  Estimated standard error for the above
-#' \item{alpha_M_estimate}  Estimated functional coefficient for the mediator,  from the scalar-on-function regression of the outcome on the mediator and treatment
-#' \item{alpha_M_se}  Estimated pointwise standard errors associated with the above
-#' \item{alpha_M_pvalue}  P-value for significance of mediator in predicting outcome, after adjusting for treatment
-#' \item{delta_int_estimate}  Intercept from simple model predicting outcome directly from treatment
-#' \item{delta_int_se}  Estimated standard error for the above
-#' \item{delta_X_estimate}  Coefficient for treatment in model predicting outcome directly from treatment
-#' \item{delta_X_se}  Estimated standard error for the above
-#' \item{beta_estimate}  Estimated indirect effect, calculated as the dot product of the effect of treatment on mediator and the treatment-adjusted effect of mediator on outcome.  It is a scalar, even though they are functions of time.
-#' \item{tvem_XM_details}  Detailed output from the tvem function for the time-varying-effect model predicting the mediator from the treatment
-#' \item{funreg_MY_details}  Detailed output from the refund::pfr function for the scalar-on-function functional regression predicting the outcome from the treatment and mediator
-#' \item{direct_effect_details}  Detailed output from the linear or generalized linear model predicting the outcome from the treatment alone, ignoring the mediator (direct effect)
+#' \item{time_grid}{Grid of time points on which the functional coefficients are estimated.}
+#' \item{gamma_int_estimate}{Estimated intercept function (as a vector of estimates) from the TVEM regression of the mediator on the treatment}
+#' \item{gamma_int_se}{Estimated pointwise standard errors associated with the above}
+#' \item{gamma_X_estimate}{Estimated time-varying treatment effect from the TVEM regression of the mediator on the treatment}
+#' \item{gamma_X_se}{Estimated pointwise standard errors associated with the above}
+#' \item{alpha_int_estimate}{Estimated scalar intercept from the scalar-on-function regression of the outcome on the mediator and treatment}
+#' \item{alpha_int_se}{Estimated standard error for the above}
+#' \item{alpha_X_estimate}{Estimated scalar coefficient for the treatment, from the scalar-on-function regression of the outcome on the mediator and treatment}
+#' \item{alpha_X_se}{Estimated standard error for the above}
+#' \item{alpha_M_estimate}{Estimated functional coefficient for the mediator,  from the scalar-on-function regression of the outcome on the mediator and treatment}
+#' \item{alpha_M_se}{Estimated pointwise standard errors associated with the above}
+#' \item{alpha_M_pvalue}{The p-value for significance of mediator in predicting outcome, after adjusting for treatment}
+#' \item{delta_int_estimate}{Intercept from simple model predicting outcome directly from treatment}
+#' \item{delta_int_se}{Estimated standard error for the above}
+#' \item{delta_X_estimate}{Coefficient for treatment in model predicting outcome directly from treatment}
+#' \item{delta_X_se}{Estimated standard error for the above}
+#' \item{beta_estimate}{Estimated indirect effect, calculated as the dot product of the effect of treatment on mediator and the treatment-adjusted effect of mediator on outcome.  It is a scalar, even though they are functions of time.}
+#' \item{tvem_XM_details}{Detailed output from the tvem function for the time-varying-effect model predicting the mediator from the treatment}
+#' \item{funreg_MY_details}{Detailed output from the refund::pfr function for the scalar-on-function functional regression predicting the outcome from the treatment and mediator}
+#' \item{direct_effect_details}{Detailed output from the linear or generalized linear model predicting the outcome from the treatment alone, ignoring the mediator (direct effect)}
 #' }
 #' 
 #' The bootstrap_results component has these components within it:
 #' \describe{
-#'   \item{betaestimate} Bootstrap point estimate of the indirect effect (average of bootstrap sample estimates).
-#'   \item{beta_boot_se} Bootstrap standard error for the indirect effect (standard deviation of bootstrap sample estimates).
-#'   \item{beta_boot_norm_lower} Lower end of the bootstrap confidence interval using the normal method in boot.ci inthe boot package.
-#'   \item{beta_boot_norm_upper} Upper end of the bootstrap confidence interval using the normal method.
-#'   \item{beta_boot_basic_lower} Lower end of the bootstrap confidence interval using the basic method in boot.ci in the boot package.
-#'   \item{beta_boot_basic_upper} Upper end of the bootstrap confidence interval using the basic method.
-#'   \item{beta_boot_perc_lower} Lower end of the bootstrap confidence interval using the percentile method in boot.ci inthe boot package.
-#'   \item{beta_boot_perc_upper} Upper end of the bootstrap confidence interval using the percentile method.
-#'   \item{boot_level} The alpha level used for the bootstrap confidence interval.
-#'   \item{boot1} The output returned from the boot function.
-#'   \item{time.required} The amount of time spent doing the bootstrap test, including generating and analyzing all samples.
+#' \item{beta_boot_estimate}{Bootstrap point estimate of the indirect effect (average of bootstrap sample estimates).} 
+#' \item{beta_boot_se}{Bootstrap standard error for the indirect effect (standard deviation of bootstrap sample estimates).}
+#' \item{beta_boot_norm_lower}{Lower end of the bootstrap confidence interval using the normal method in boot.ci inthe boot package.}
+#' \item{beta_boot_norm_upper}{Upper end of the bootstrap confidence interval using the normal method.}
+#' \item{beta_boot_basic_lower}{Lower end of the bootstrap confidence interval using the basic method in boot.ci in the boot package.}
+#' \item{beta_boot_basic_upper}{Upper end of the bootstrap confidence interval using the basic method.}
+#' \item{beta_boot_perc_lower}{Lower end of the bootstrap confidence interval using the percentile method in boot.ci inthe boot package.}
+#' \item{beta_boot_perc_upper}{Upper end of the bootstrap confidence interval using the percentile method.}
+#' \item{boot_level}{The alpha level used for the bootstrap confidence interval.}
+#' \item{boot1}{The output returned from the boot function.}
+#' \item{time.required}{The amount of time spent doing the bootstrap test, including generating and analyzing all samples.}
 #' } 
 #' @export
 
@@ -133,8 +132,7 @@ funreg_mediation <- function(data,
                              boot_level=.05) {    
   #-------------------------------------------;
   #--- PROCESSING OF INPUT -------------------;
-  #-------------------------------------------;
-  cat("Working\n")
+  #-------------------------------------------; 
   m <- match.call(expand.dots = FALSE);
   m$treatment <- NULL;
   m$mediator <- NULL;
@@ -317,7 +315,6 @@ funreg_mediation <- function(data,
   analyze_data_for_mediation <- function(wide_data, 
                                          indices, 
                                          get_details=FALSE) {
-    cat(".");
     local_wide_data <- wide_data[indices,];
     #--- Take data frame apart into pieces to use with pfr function 
     wide_mediator <- as.matrix(local_wide_data[,wide_mediator_columns]);
@@ -362,13 +359,8 @@ funreg_mediation <- function(data,
       print(pfr_formula);
       print(funreg_MY);
       stop("Error in running pfr.")
-    } else {
-      print(c(min(funreg_MY$coefficients),
-              mean(funreg_MY$coefficients),
-              max(funreg_MY$coefficients),
-              var(funreg_MY$coefficients)));
-    }
-    alpha_int_estimate <- as.numeric(funreg_MY$coefficient["(Intercept)"]);
+    } 
+	alpha_int_estimate <- as.numeric(funreg_MY$coefficient["(Intercept)"]);
     alpha_int_se <- as.numeric(summary(funreg_MY)$se["(Intercept)"]);
     alpha_X_estimate <-  as.numeric(funreg_MY$coefficient["wide_treatment"]);
     alpha_X_se <- as.numeric(summary(funreg_MY)$se["wide_treatment"]);
@@ -509,6 +501,8 @@ funreg_mediation <- function(data,
       }
       return(answer_list);
     } else { 
+	  this_bootstrap <<- this_bootstrap + 1;
+	  cat(this_bootstrap);cat(".")
       if (tvem_do_loop) {
         ICs_table_from_bootstraps <<- rbind(ICs_table_from_bootstraps,IC_table[,2]);
       }
@@ -523,7 +517,9 @@ funreg_mediation <- function(data,
                                                  get_details=TRUE); 
   before_boot <- Sys.time();  
   ICs_table_from_bootstraps <- NULL;
-  print("Ran original results");
+  cat("Ran original results.\n");
+  cat("Working on bootstrap results:\n");
+  this_bootstrap <- 0;
   boot1 <- boot(data=wide_data,
                 statistic=analyze_data_for_mediation, 
                 R=nboot);   

@@ -13,6 +13,7 @@
 #' @param sigma_Y Error standard deviation of the outcome Y 
 #' 
 #' @return A simulated longitudinal dataset in long form.
+#' @export
 
 simulate_functional_mediation_example <- function(
   nsub = 200,
@@ -23,17 +24,17 @@ simulate_functional_mediation_example <- function(
   alpha_M = function(t) {3-exp(t/max(t))},
   alpha_int = 0, 
   alpha_X = .2,
-  sigma_Y = 1)
+  sigma_Y = 1,
+  sigma_M_intercept = 2,
+  sigma_M_slope = 2,
+  sigma_M_error = 2,
+  rho_M_error = .8 )
   {
   # by design to reduce participant burden.
   #     Timeline:
-  time.grid <- 1:ntimes;  # vector of all possible times;
-  beta.true <- mean(alpha_M(time.grid)*gamma_X(time.grid));
+  time_grid <- 1:ntimes;  # vector of all possible times;
+  beta.true <- mean(alpha_M(time_grid)*gamma_X(time_grid));
   #     Error standard deviations:
-  sigma.m.intercept <- 2;
-  sigma.m.slope <- 2;
-  sigma.m.error <- 2;
-  rho.m.error <- .8; 
   # Simulate X...
   save.image("starting.rdata");
   X <- rbinom(n=nsub, size=1, prob=.5);  # binary treatment assignment;
@@ -41,22 +42,22 @@ simulate_functional_mediation_example <- function(
   Z2 <- rpois(nsub,lambda=2);
   # Simulate M from X...
   AutoRegError <- matrix(0,nsub,ntimes);
-  AutoRegError[,1] <- rnorm(n=nsub,mean=0,sd=sigma.m.error);
+  AutoRegError[,1] <- rnorm(n=nsub,mean=0,sd=sigma_M_error);
   for (j in 2:ntimes) {
-    AutoRegError[,j] <- rho.m.error*AutoRegError[,j-1] +
-      sqrt(1-rho.m.error^2)*rnorm(n=nsub,mean=0,sd=sigma.m.error);
+    AutoRegError[,j] <- rho_M_error*AutoRegError[,j-1] +
+      sqrt(1-rho_M_error^2)*rnorm(n=nsub,mean=0,sd=sigma_M_error);
   }
   all.M <- matrix(0,nsub,ntimes);  # time-varying mediator; 
   for (i in 1:nsub) { 
-    all.M[i,] <- gamma_int(time.grid) + X[i]*gamma_X(time.grid) +
-      rnorm(n=1,mean=0,sd=sigma.m.intercept) + 
-      rnorm(n=1,mean=0,sd=sigma.m.slope/max(time.grid))*time.grid;
+    all.M[i,] <- gamma_int(time_grid) + X[i]*gamma_X(time_grid) +
+      rnorm(n=1,mean=0,sd=sigma_M_intercept) + 
+      rnorm(n=1,mean=0,sd=sigma_M_slope/max(time_grid))*time_grid;
   } 
   all.M <- all.M + AutoRegError;
   # Simulate Y from M and X...
   mu <- rep(NA,nsub); # = E(Y|X,M);
   for (i in 1:nsub) {
-    mu[i] <- alpha_int + mean(alpha_M(time.grid) * all.M[i,]) + alpha_X*X[i];
+    mu[i] <- alpha_int + mean(alpha_M(time_grid) * all.M[i,]) + alpha_X*X[i];
   } 
   Y <- mu + rnorm(n=nsub,mean=0,sd=sigma_Y);
   binY <- 1*(Y>mu);
@@ -68,7 +69,7 @@ simulate_functional_mediation_example <- function(
   }
   temp <- data.frame(
     subject_id=rep(1:nsub,each=ntimes),
-    time_value=rep(time.grid,times=nsub),
+    time_value=rep(time_grid,times=nsub),
     X=rep(X,each=ntimes),
     M=as.vector(t(M)),
     Y=rep(Y,each=ntimes),

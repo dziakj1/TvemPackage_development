@@ -16,9 +16,11 @@ select_tvem <- function(max_knots=5,
   #' 
   #' @return A list with two components:
   #' \describe{
-  #'   \item{ICsTable}{The different numbers of knots which were tried.}
-  #'   \item{bestFit}{The tvem object containing the results of the fitted model.}
-  #'   }
+  #' \item{ICsTable}{The different numbers of knots which were tried.}
+  #' \item{bestFit}{The tvem object containing the results of the fitted model.}
+  #' }
+  #' @export
+  
   args1 <- match.call();  
   num_knots_values <- 0:max_knots;  # will try at least each of these values for num_knots;
   IC_values <- rep(NA,length(num_knots_values)); 
@@ -48,7 +50,6 @@ select_tvem <- function(max_knots=5,
       # use BIC;
       IC_values[num_knots_values_index] <- ans1$model_information$pseudo_bic;
     }
-    print("hi3");
     if (num_knots_values_index==length(num_knots_values)) {
       # If you have come to end of list of values to try for number of knots
       if ((which.min(IC_values)==num_knots_values_index) &
@@ -70,6 +71,5 @@ select_tvem <- function(max_knots=5,
                             (names(more_args)!="use_bic")];
   ans1 <- do.call(tvem, more_args);
   ans1$ICs_table <- cbind(knots=num_knots_values, ic=IC_values);
-  print(ans1$ICs_table);
   return(ans1);
 }

@@ -10,7 +10,7 @@
 #' @param min_time The time point at the beginning of the simulated time interval
 #' @param max_time The time point at the end of the simulated time interval
 #' 
-#' @output
+#' @export
 
 simulate_tvem_example <- function(
   nsub = 500,

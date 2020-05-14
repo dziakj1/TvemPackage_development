@@ -10,13 +10,13 @@
 #' @param use_panes Whether to plot multiple coefficient functions in a single image.
 #' @param what_plot One of "pfr","coefs", or "tvem."  These options are as follows:
 #' \describe{
-#'   \item{pfr} For a "pfr" plot, the functional coefficient for predicting the outcome from the mediator (conditional on treatment), is shown, by calling the plot method for the penalized functional regression results.  See the documentation for plot.gam() in the mgcv function for more information, because the pfr() function uses gam() as a back end.
-#'   \item{coefs} For a "coefs" plot, the three important functional coefficients in the model (intercept for predicting mediator, treatment effect on mediator, and mediator effect on outcome adjusting for treatment) are plotted one after another.  That is, the plots are shown for gamma_int_estimate, gamma_X_estimate, and alpha_M_estimate, each as a function of time_grid.
-#'   \item{tvem} For a "tvem" plot, the functional coefficients in the TVEM model predicting mediator from treatment are displayed.
+#' \item{pfr}{For a "pfr" plot, the functional coefficient for predicting the outcome from the mediator (conditional on treatment), is shown, by calling the plot method for the penalized functional regression results.  See the documentation for plot.gam() in the mgcv function for more information, because the pfr() function uses gam() as a back end.}
+#' \item{coefs}{For a "coefs" plot, the three important functional coefficients in the model (intercept for predicting mediator, treatment effect on mediator, and mediator effect on outcome adjusting for treatment) are plotted one after another.  That is, the plots are shown for gamma_int_estimate, gamma_X_estimate, and alpha_M_estimate, each as a function of time_grid.}
+#' \item{tvem}{For a "tvem" plot, the functional coefficients in the TVEM model predicting mediator from treatment are displayed.}
 #' }
 #' 
 #' @export
-#' @S3method plot funreg
+#' @method plot funreg_mediation
 #' 
 plot.funreg_mediation <- function(fitted_funmed_model,
                                   use_panes=TRUE, 
