@@ -360,7 +360,7 @@ funreg_mediation <- function(data,
       print(funreg_MY);
       stop("Error in running pfr.")
     } 
-	alpha_int_estimate <- as.numeric(funreg_MY$coefficient["(Intercept)"]);
+    alpha_int_estimate <- as.numeric(funreg_MY$coefficient["(Intercept)"]);
     alpha_int_se <- as.numeric(summary(funreg_MY)$se["(Intercept)"]);
     alpha_X_estimate <-  as.numeric(funreg_MY$coefficient["wide_treatment"]);
     alpha_X_se <- as.numeric(summary(funreg_MY)$se["wide_treatment"]);
@@ -501,8 +501,8 @@ funreg_mediation <- function(data,
       }
       return(answer_list);
     } else { 
-	  this_bootstrap <<- this_bootstrap + 1;
-	  cat(this_bootstrap);cat(".")
+      if (this_bootstrap>0) {cat(this_bootstrap);cat(".");}
+      this_bootstrap <<- this_bootstrap + 1;
       if (tvem_do_loop) {
         ICs_table_from_bootstraps <<- rbind(ICs_table_from_bootstraps,IC_table[,2]);
       }
@@ -523,6 +523,7 @@ funreg_mediation <- function(data,
   boot1 <- boot(data=wide_data,
                 statistic=analyze_data_for_mediation, 
                 R=nboot);   
+  cat("Done bootstrapping.\n");
   boot2 <- boot.ci(boot1,conf=1-boot_level,type="norm");
   boot3 <- boot.ci(boot1,conf=1-boot_level,type="basic");
   boot4 <- boot.ci(boot1,conf=1-boot_level,type="perc");
@@ -549,4 +550,4 @@ funreg_mediation <- function(data,
                  bootstrap_results=bootstrap_results);
   class(answer) <- "funreg_mediation";
   return(answer);
-}  
+}
