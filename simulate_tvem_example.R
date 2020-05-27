@@ -48,13 +48,10 @@ simulate_tvem_example <- function(
   sigma_y <- 1.5;
   beta0_y <- 2 - .3*sqrt(scaled_times);
   beta1_y <- .5*scaled_times^2; 
-  beta2_y <- rep(0,length(scaled_times));
+  beta2_y <- rep(.2,length(scaled_times));
   matrix_beta0_y <- matrix(rep(beta0_y,n_subjects),byrow=TRUE,nrow=n_subjects);
   matrix_beta1_y <- matrix(rep(beta1_y,n_subjects),byrow=TRUE,nrow=n_subjects);
-  matrix_beta2_y <- matrix(rep(beta2_y,n_subjects),byrow=TRUE,nrow=n_subjects);
-  print(summary(beta0_y));
-  print(summary(beta1_y));
-  print(summary(beta2_y));
+  matrix_beta2_y <- matrix(rep(beta2_y,n_subjects),byrow=TRUE,nrow=n_subjects); 
   y_short_term_rho <- 0.8;
   if (simulate_binary) {
     eta_y <- matrix_beta0_y + matrix_beta1_y*x1 + matrix_beta2_y*x2;
@@ -69,14 +66,7 @@ simulate_tvem_example <- function(
       y_error_term_AR1[,j] <- y_short_term_rho*y_error_term_AR1[,j-1] + 
         sqrt(1-y_short_term_rho^2)*rnorm(n_subjects);
     }
-    y <- mu_y + sigma_y * y_error_term_AR1; 
-    print(var(as.vector(mu_y))); 
-    print(var(as.vector(beta0_y))); 
-    print(var(as.vector(beta1_y ))); 
-    print(var(as.vector(x1 ))); 
-    print(var(as.vector(beta1_y*x1 ))); 
-    print(var(as.vector(beta2_y*x2))); 
-    print(var(as.vector(sigma_y * y_error_term_AR1)));
+    y <- mu_y + sigma_y * y_error_term_AR1;  
     y <- round(y,3);
   } 
   for (this_subject in 1:n_subjects) {
