@@ -15,11 +15,15 @@ simulate_tvem_example <- function(
   simulate_binary = FALSE) {
   n_obs_possible <- 141;
   prop_obs_observed <- .3; 
+  sigma_x1 <- 2;
+  sigma_x2 <- 2;
+  truncate_for_realism <- TRUE;
   possible_observation_times <- seq(0,max_time,length=n_obs_possible);
   scaled_times <- possible_observation_times/max_time;
+  print(summary(scaled_times));
   n_obs_per_subject <- rbinom(n_subjects,n_obs_possible,prop_obs_observed);
     # Generate X1;
-  mu_x1 <- 6 - .5*exp(scaled_times);
+  mu_x1 <- 6 - 2*sqrt(pmax(0,scaled_times-.2));
   x1_short_term_rho <- .7;
   x1_error_term_AR1 <- matrix(NA, n_subjects, n_obs_possible);
   x1_error_term_AR1[,1] <- rnorm(n_subjects);
@@ -27,10 +31,10 @@ simulate_tvem_example <- function(
     x1_error_term_AR1[,j] <- x1_short_term_rho*x1_error_term_AR1[,j-1] + 
       sqrt(1-x1_short_term_rho^2)*rnorm(n_subjects);
   }
-  x1 <- t(apply(x1_error_term_AR1,1,"+",mu_x1));
+  x1 <- t(apply(sigma_x1*x1_error_term_AR1,1,"+",mu_x1));
   x1 <- round(x1,3);
   # Generate X2;
-  mu_x2 <- 3 + scaled_times;
+  mu_x2 <- 3 + sqrt(pmax(0,scaled_times-.5));
   x2_short_term_rho <- .7;
   x2_error_term_AR1 <- matrix(NA, n_subjects, n_obs_possible);
   x2_error_term_AR1[,1] <- rnorm(n_subjects);
@@ -38,29 +42,41 @@ simulate_tvem_example <- function(
     x2_error_term_AR1[,j] <- x2_short_term_rho*x2_error_term_AR1[,j-1] + 
       sqrt(1-x2_short_term_rho^2)*rnorm(n_subjects);
   }
-  x2 <- t(apply(x2_error_term_AR1,1,"+",mu_x2));
+  x2 <- t(apply(sigma_x2*x2_error_term_AR1,1,"+",mu_x2));
   x2 <- round(x2,3);
   # Generate Y;
-  sigma_y <- 2;
-  #beta0_y <- 5 - exp(scaled_times);
-  beta0_y <- -3+exp(scaled_times);
-  beta1_y <- .1*exp(scaled_times);
+  sigma_y <- 1.5;
+  beta0_y <- 2 - .3*sqrt(scaled_times);
+  beta1_y <- .5*scaled_times^2; 
   beta2_y <- rep(0,length(scaled_times));
+  matrix_beta0_y <- matrix(rep(beta0_y,n_subjects),byrow=TRUE,nrow=n_subjects);
+  matrix_beta1_y <- matrix(rep(beta1_y,n_subjects),byrow=TRUE,nrow=n_subjects);
+  matrix_beta2_y <- matrix(rep(beta2_y,n_subjects),byrow=TRUE,nrow=n_subjects);
+  print(summary(beta0_y));
+  print(summary(beta1_y));
+  print(summary(beta2_y));
+  y_short_term_rho <- 0.8;
   if (simulate_binary) {
-    eta_y <- beta0_y + beta1_y*x1 + beta2_y*x2;
+    eta_y <- matrix_beta0_y + matrix_beta1_y*x1 + matrix_beta2_y*x2;
     mu_y <- plogis(eta_y);
     stopifnot((min(mu_y)<.75 | max(mu_y)>.25));
     y <- apply(mu_y,MARGIN=c(1,2),FUN=rbinom,n=1,size=1);
   } else {
-    mu_y <- beta0_y + beta1_y*x1 + beta2_y*x2;
-    y_short_term_rho <- .5;
+    mu_y <- matrix_beta0_y + matrix_beta1_y*x1 + matrix_beta2_y*x2;
     y_error_term_AR1 <- matrix(NA, n_subjects, n_obs_possible);
     y_error_term_AR1[,1] <- rnorm(n_subjects);
     for (j in 2:n_obs_possible) {
       y_error_term_AR1[,j] <- y_short_term_rho*y_error_term_AR1[,j-1] + 
         sqrt(1-y_short_term_rho^2)*rnorm(n_subjects);
     }
-    y <- mu_y + sigma_y * y_error_term_AR1;
+    y <- mu_y + sigma_y * y_error_term_AR1; 
+    print(var(as.vector(mu_y))); 
+    print(var(as.vector(beta0_y))); 
+    print(var(as.vector(beta1_y ))); 
+    print(var(as.vector(x1 ))); 
+    print(var(as.vector(beta1_y*x1 ))); 
+    print(var(as.vector(beta2_y*x2))); 
+    print(var(as.vector(sigma_y * y_error_term_AR1)));
     y <- round(y,3);
   } 
   for (this_subject in 1:n_subjects) {
@@ -73,6 +89,10 @@ simulate_tvem_example <- function(
                                     x2=as.vector(t(x2)),
                                     y=as.vector(t(y)));
   long_dataset <- entire_long_dataset[which(is.na(entire_long_dataset$y)==FALSE),]
-  return(long_dataset);
-  return(sim_data);
+  if (truncate_for_realism) {
+    entire_long_dataset$x1 <- round(pmin(pmax(entire_long_dataset$x1,0),10),1);
+    entire_long_dataset$x2 <- round(pmin(pmax(entire_long_dataset$x2,0),10),1);
+    entire_long_dataset$y <- round(pmin(pmax(entire_long_dataset$y,0),10),1);
+  }
+  return(entire_long_dataset); 
 }
