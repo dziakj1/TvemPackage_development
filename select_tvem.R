@@ -63,6 +63,7 @@ select_tvem <- function(max_knots=5,
     } 
   } 
   best_num_knots <- num_knots_values[which.min(IC_values)];  
+  print(paste("Selected",best_num_knots,"interior knots."));
   more_args <- as.list(args1)[-1];
   more_args$num_knots <- best_num_knots;
   more_args$use_naive_se <- FALSE; 

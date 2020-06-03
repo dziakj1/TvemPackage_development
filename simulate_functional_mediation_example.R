@@ -34,26 +34,22 @@
 #' @export
 
 simulate_functional_mediation_example <- function(
-  nsub = 200,
+  nsub = 250,
   ntimes = 100,
-  observe_rate = .2, 
+  observe_rate = .4, 
   gamma_int = function(t) {return(t^.5)}, # time-varying mean of mediator variable for the X=0 group;
   gamma_X = function(t) {return(-(t/2)^.5)}, # time-varying effect of X on the mediator;
-  alpha_M = function(t) {exp(t)-1}, # functional (funreg) coefficient for cumulative effect of M on Y;
+  alpha_M = function(t) {(1/2)*(exp(t)-1)}, # functional (funreg) coefficient for cumulative effect of M on Y;
   alpha_int = 0,  # mean of Y if the X is zero and M is the 0 function; 
   alpha_X = .2,  # direct effect of X on Y after adjusting for M;
   sigma_Y = 1, 
   sigma_M_error = 2,
-  rho_M_error = .8,
-#  mean_Z1=1,
-#  mean_Z2=2,
+  rho_M_error = .8, 
   simulate_binary_Y=FALSE ) 
 {
   time_grid <- (1:ntimes)/ntimes;  # vector of all possible times, scaled within 0 to 1;
   true_beta <- mean(alpha_M(time_grid)*gamma_X(time_grid));
-  short_X <- rbinom(nsub,size=1,prob=.5);
-#  Z1 <- rpois(nsub,lambda=mean_Z1);
-#  Z2 <- rpois(nsub,lambda=mean_Z2);
+  short_X <- rbinom(nsub,size=1,prob=.5); 
   # Simulate M from X...
   autoreg_error <- matrix(0,nsub,ntimes);
   autoreg_error[,1] <- rnorm(n=nsub,mean=0,sd=sigma_M_error);
@@ -92,9 +88,7 @@ simulate_functional_mediation_example <- function(
     t=rep(time_grid,times=nsub),
     X=rep(short_X,each=ntimes),
     M=as.vector(t(M)),
-    Y=rep(short_Y,each=ntimes)#,
-#    Z1=rep(Z1,each=ntimes),
- #   Z2=rep(Z2,each=ntimes)
+    Y=rep(short_Y,each=ntimes) 
   );
   long_simulated_data <- temp[which(!is.na(temp$M)),]; 
   return(list(time_grid=time_grid,
