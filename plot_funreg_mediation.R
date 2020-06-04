@@ -14,6 +14,7 @@
 #' \item{coefs}{For a "coefs" plot, the three important functional coefficients in the model (intercept for predicting mediator, treatment effect on mediator, and mediator effect on outcome adjusting for treatment) are plotted one after another.  That is, the plots are shown for gamma_int_estimate, gamma_X_estimate, and alpha_M_estimate, each as a function of time_grid.}
 #' \item{tvem}{For a "tvem" plot, the functional coefficients in the TVEM model predicting mediator from treatment are displayed.}
 #' }
+#' @param ... Further arguments currently not supported
 #' 
 #' @export
 #' @method plot funreg_mediation
@@ -22,7 +23,7 @@ plot.funreg_mediation <- function(x,
                                   use_panes=TRUE, 
                                   what_plot=c("pfr",
                                               "coefs",
-                                              "tvem")) {
+                                              "tvem"), ...) {
   if (use_panes==FALSE) {par(mfrow=c(1,1));}
   what <- match.arg(what_plot)
   if (what=="pfr") {

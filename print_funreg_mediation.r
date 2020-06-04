@@ -1,11 +1,12 @@
 #' print.funreg_mediation:  Print output from a model that was fit by the funreg_mediation function.
 #' 
 #' @param x The funreg_mediation object (output of the funreg_mediation function)
+#' @param ... Further arguments currently not supported
 #' 
 #' @export
 #' @method print funreg_mediation
 
-print.funreg_mediation <- function(x) {
+print.funreg_mediation <- function(x, ...) {
   cat("======================================================= \n");
   cat("Functional Regression Mediation Function Output \n");
   cat("======================================================= \n");

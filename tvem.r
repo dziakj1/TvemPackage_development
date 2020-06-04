@@ -139,7 +139,7 @@
 #' @keywords Statistics|smooth
 #' @keywords Statistics|models|regression
 #'
-#' 
+#'@import mgcv
 #'@importFrom graphics abline hist lines par plot text
 #'@importFrom stats AIC as.formula binomial coef
 #'           gaussian glm plogis poisson qnorm rbinom

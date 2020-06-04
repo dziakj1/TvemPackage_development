@@ -2,6 +2,7 @@
 #' 
 #' @param x The tvem object (output of the tvem function)
 #' @param ornate Whether to print lines between different sections of the output for easier reading.
+#' @param ... Further arguments currently not supported
 #' 
 #' @export
 #' @method print tvem
@@ -9,7 +10,7 @@
 
 
 
-print.tvem <- function(x, ornate=TRUE) {
+print.tvem <- function(x, ornate=TRUE, ...) {
   if (ornate) {
     divider <- "======================================================= \n";
   } else {

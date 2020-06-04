@@ -5,25 +5,23 @@
 #' x1 has a time-varying effect and x2 has no effect.
 #' 
 #' @param n_subjects Number of subjects in dataset 
-#' @param max_time The time point at the end of the simulated time interval
-#' @param n_subjects  
-#' @param max_time 
-#' @param simulate_binary 
-#' @param n_obs_possible  
-#' @param prop_obs_observed  
-#' @param sigma_x1  
-#' @param sigma_x2  
-#' @param truncate_for_realism 
-#' @param round_digits 
-#' @param x1_short_term_rho 
-#' @param x2_short_term_rho 
-#' @param sigma_y  
-#' @param mu_x1_function 
-#' @param mu_x2_function  
-#' @param beta0_y_function 
-#' @param beta1_y_function  
-#' @param beta2_y_function  
-#' @param y_short_term_rho  
+#' @param max_time The time point at the end of the simulated time interval 
+#' @param simulate_binary Whether the simulated data should be binary
+#' @param n_obs_possible Total number of possible measurement times per subject
+#' @param prop_obs_observed Proportion of these that are actually observed
+#' @param sigma_x1 Standard deviation of covariate 1, assumed homoskedastic over time
+#' @param sigma_x2 Standard deviation of covariate 2, assumed homoskedastic over time
+#' @param truncate_for_realism Whether to prevent simulated values from going below 0 or above 10, in order to imitate survey data
+#' @param round_digits Number of digits to round data to
+#' @param x1_short_term_rho Correlation between adjacent measurements of covariate 1
+#' @param x2_short_term_rho Correlation between adjacent measurements of covariate 2
+#' @param sigma_y  Error standard deviation of y, only used if it is normal and not binary
+#' @param mu_x1_function Mean of covariate 1 as function of time
+#' @param mu_x2_function Mean of covariate 2 as function of time 
+#' @param beta0_y_function Intercept of TVEM as function of time
+#' @param beta1_y_function TVEM coefficient of covariate 1 as function of time  
+#' @param beta2_y_function TVEM coefficient of covariate 2 as function of time 
+#' @param y_short_term_rho Correlation between adjacent measurements of y, only used if it is normal and not binary 
 #' @return A simulated dataset with the following variables:
 #' \describe{
 #' \item{subject_id}{Subject ID}

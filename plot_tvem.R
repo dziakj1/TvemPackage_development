@@ -6,7 +6,7 @@
 #' written to a file instead, by preceding the call to plot.tvem 
 #' with a call to png(), pdf(), or other R graphic file output functions.
 #' 
-#' @param the_tvem The TVEM object to be plotted.
+#' @param x The TVEM object to be plotted.
 #' @param use_panes Whether to plot multiple coefficient
 #' functions in a single image.
 #' @param which_plot The coefficient number to plot,
@@ -19,26 +19,27 @@
 #' outliers or skew in TVEM with a numeric
 #' outcome.  They are not likely to be as useful 
 #' in TVEM with a binary or other discrete outcome.
+#' @param ... Further arguments currently not supported
 #' 
 #' @export
 #' @method plot tvem
 
-plot.tvem <- function(the_tvem,
+plot.tvem <- function(x,
                       use_panes=TRUE,
                       which_plot=NULL,
-                      diagnostics=FALSE) {
+                      diagnostics=FALSE, ...) {
   if (diagnostics) {
     if (use_panes) {par(mfrow=c(1,2))};
-    hist(the_tvem$back_end_model$fitted,
+    hist(x$back_end_model$fitted,
          main="Residuals",
          xlab="Residual");
-    plot(the_tvem$back_end_model$fitted,
-         the_tvem$back_end_model$residuals,
+    plot(x$back_end_model$fitted,
+         x$back_end_model$residuals,
          main="Fitted versus residuals",
          xlab="Fitted",
          ylab="Residuals");
   } else {
-    num_tv_coefs <- length(the_tvem$grid_fitted_coefficients);
+    num_tv_coefs <- length(x$grid_fitted_coefficients);
     if (use_panes) {
       if (num_tv_coefs==1) {par(mfrow=c(1,1));}
       if (num_tv_coefs==2) {par(mfrow=c(1,2));}
@@ -48,7 +49,7 @@ plot.tvem <- function(the_tvem,
       if (num_tv_coefs==9) {par(mfrow=c(3,3));}
       if(num_tv_coefs>10) {stop("Too many functions to plot in panes.");}  
     }
-    the_grid <- the_tvem$time_grid;
+    the_grid <- x$time_grid;
     temp_plot_function <- function(the_var_name,
                                    the_grid,
                                    the_coef) {
@@ -71,8 +72,8 @@ plot.tvem <- function(the_tvem,
     }
     if (is.null(which_plot)) {
       for (which_plot in 1:num_tv_coefs) {
-        the_coef <- the_tvem$grid_fitted_coefficients[[which_plot]];
-        the_var_name <- names(the_tvem$grid_fitted_coefficients)[which_plot];
+        the_coef <- x$grid_fitted_coefficients[[which_plot]];
+        the_var_name <- names(x$grid_fitted_coefficients)[which_plot];
         ymin <- min(0,min(the_coef$lower));
         ymax <- max(0,max(the_coef$upper));
         temp_plot_function(the_var_name,
@@ -80,8 +81,8 @@ plot.tvem <- function(the_tvem,
                            the_coef);
       }
     } else {
-      the_coef <- the_tvem$grid_fitted_coefficients[[which_plot]];
-      the_var_name <- names(the_tvem$grid_fitted_coefficients)[which_plot];
+      the_coef <- x$grid_fitted_coefficients[[which_plot]];
+      the_var_name <- names(x$grid_fitted_coefficients)[which_plot];
       ymin <- min(0,min(the_coef$lower));
       ymax <- max(0,max(the_coef$upper));
       temp_plot_function(the_var_name,
