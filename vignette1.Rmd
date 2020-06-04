@@ -1,10 +1,10 @@
 ---
-title: "Fitting a simple tvem with numeric output"
+title: "Fitting a simple tvem"
 author: "John J. Dziak"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Fitting a simple tvem with numeric output}
+  %\VignetteIndexEntry{Fitting a simple tvem}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 In this example we simulate a longitudinal dataset and fit a simple time-varying coefficient model to it.  
 
-First we call load the tvem library.
+First we load the tvem package.
 
 ```{r}
 library(tvem)
@@ -109,5 +109,8 @@ model4 <- tvem(data=the_data,
 print(model4);
 plot(model4);
 ```
+
+
+The implied mean model is $E(y|t) =\beta_0(t)+\beta_1(t)x_1(t) + \beta_2 x_2(t).$  
 
 The seeming oscillations in the confidence interval width do not have any particular interpretation;  they are just an accident of the placement of the knots.  The takeaway message is the increasing $\beta_1(t)$ over time, suggesting an increasing association between $x_1$ and $y$, that is, some kind of interaction between $t$ and $x_1$ in predicting $y$.

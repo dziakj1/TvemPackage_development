@@ -138,7 +138,14 @@
 #' 
 #' @keywords Statistics|smooth
 #' @keywords Statistics|models|regression
+#'
 #' 
+#'@importFrom graphics abline hist lines par plot text
+#'@importFrom stats AIC as.formula binomial coef
+#'           gaussian glm plogis poisson qnorm rbinom
+#'           rnorm sd terms update var
+#'  
+#'    
 #' @export
 
 tvem <- function(data,
@@ -330,7 +337,7 @@ tvem <- function(data,
     }
   } 
   if (print_gam_formula) {print(bam_formula);}
-  model1 <- bam(bam_formula,
+  model1 <- mgcv::bam(bam_formula,
                 data=data_for_analysis,
                 family=family,
                 method=method);

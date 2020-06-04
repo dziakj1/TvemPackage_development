@@ -148,6 +148,12 @@ funreg_mediation <- function(data,
   m$tvem_do_loop <- NULL;
   m$grid <- NULL;
   m$nboot <- NULL;
+  if (!requireNamespace("refund", quietly = TRUE)) {
+     stop("The refund package is needed in order to run this function.");
+  }
+  if (!requireNamespace("boot", quietly = TRUE)) {
+     stop("The boot package is needed in order to run this function.");
+  }
   if (is.matrix(eval.parent(m$data))) {
     m$data <- as.data.frame(data);
   }
@@ -333,6 +339,7 @@ funreg_mediation <- function(data,
     nobs <- length(wide_mediator_columns);
     nsub <- length(wide_id);
     #--- EFFECT OF MEDIATOR M AND TREATMENT X ON OUTCOME Y ---;
+	lf <- refund::lf;
     pfr_formula <- wide_outcome~lf(wide_mediator,
                                    presmooth="interpolate")+wide_treatment;
     if (num_covariates_on_outcome>0) {
@@ -345,14 +352,14 @@ funreg_mediation <- function(data,
     }
     ###save.image("working.rdata");
     if (logistic) {
-      funreg_MY <- try(pfr(pfr_formula,
+      funreg_MY <- try(refund::pfr(pfr_formula,
                            scale=1,
                            family=binomial()));
       # I wish I could let the user send the data and family in from outside the function,
       # but the pfr function does not allow this due to its unusual implementation
       # as a wrap-around for a hidden call to gam.;
     } else {
-      funreg_MY <- try(pfr(pfr_formula,
+      funreg_MY <- try(refund::pfr(pfr_formula,
                            family=gaussian()));
     } 
     if (any(class(funreg_MY)=="try-error")) {
@@ -520,15 +527,15 @@ funreg_mediation <- function(data,
   cat("Ran original results.\n");
   cat("Working on bootstrap results:\n");
   this_bootstrap <- 0;
-  boot1 <- boot(data=wide_data,
+  boot1 <- boot::boot(data=wide_data,
                 statistic=analyze_data_for_mediation, 
                 R=nboot);   
   cat("Done bootstrapping.\n");
-  boot2 <- boot.ci(boot1,conf=1-boot_level,type="norm");
-  boot3 <- boot.ci(boot1,conf=1-boot_level,type="basic");
-  boot4 <- boot.ci(boot1,conf=1-boot_level,type="perc");
+  boot2 <- boot::boot.ci(boot1,conf=1-boot_level,type="norm");
+  boot3 <- boot::boot.ci(boot1,conf=1-boot_level,type="basic");
+  boot4 <- boot::boot.ci(boot1,conf=1-boot_level,type="perc");
   after_boot <- Sys.time(); 
-  bootstrap_results <- list(beta_boot_estimate= norm.ci(boot1,conf=.001)[2],
+  bootstrap_results <- list(beta_boot_estimate= boot::norm.ci(boot1,conf=.001)[2],
                             beta_boot_se=sd(boot1$t),
                             beta_boot_norm_lower=boot2$normal[2],
                             beta_boot_norm_upper=boot2$normal[3],

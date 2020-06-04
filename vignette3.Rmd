@@ -1,0 +1,55 @@
+---
+title: "Demonstrating functional mediation"
+author: "John J. Dziak"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Demonstrating functional mediation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+First we load the required packages.  
+
+```{r}
+library(tvem)
+library(refund)
+library(boot)
+```
+ 
+ 
+We then simulate data.  The info1 object will contain not only the simulated dataset, but the true values of the simulated parameters, including the indirect effect. 
+
+```{r}
+set.seed(123);
+info1 <- simulate_functional_mediation_example();
+the_data <- info1$dataset;
+```
+
+Now call the functional mediation function.  Only 19 bootstrap samples are used below for the illustration.  Only 9 bootstraps allows  possible p-values of .05, .10, ..., 1.0.  At least 199 bootstraps is recommended in practice in order to increase precision and power, allowing p-values of .005, .010, .015, ....
+
+```{r}
+model1 <- funreg_mediation(data=the_data,
+                             treatment=X,
+                             mediator=M,
+                             outcome=Y,
+                             id=subject_id,
+                             time=t,
+                             nboot=19);			
+```
+
+We can print and plot the results.
+
+```{r}
+print(model1);
+plot(model1);
+```
+  
+
