@@ -533,7 +533,8 @@ funreg_mediation <- function(data,
   cat("Done bootstrapping.\n");
   boot2 <- boot::boot.ci(boot1,conf=1-boot_level,type="norm");
   boot3 <- boot::boot.ci(boot1,conf=1-boot_level,type="basic");
-  boot4 <- boot::boot.ci(boot1,conf=1-boot_level,type="perc");
+  boot4 <- try(boot::boot.ci(boot1,conf=1-boot_level,type="bca"),silent=TRUE);
+  boot5 <- boot::boot.ci(boot1,conf=1-boot_level,type="perc");
   after_boot <- Sys.time(); 
   bootstrap_results <- list(beta_boot_estimate= boot::norm.ci(boot1,conf=.001)[2],
                             beta_boot_se=sd(boot1$t),
@@ -541,8 +542,10 @@ funreg_mediation <- function(data,
                             beta_boot_norm_upper=boot2$normal[3],
                             beta_boot_basic_lower=boot3$basic[4],
                             beta_boot_basic_upper=boot3$basic[5],
-                            beta_boot_perc_lower=boot4$percent[4],
-                            beta_boot_perc_upper=boot4$percent[5],
+                            beta_boot_bca_lower=ifelse(any(class(boot4)=="try-error"),NA,boot4$percent[4]),
+                            beta_boot_bca_upper=ifelse(any(class(boot4)=="try-error"),NA,boot4$percent[5]),
+                            beta_boot_perc_lower=boot5$percent[4],
+                            beta_boot_perc_upper=boot5$percent[5],
                             boot_level=boot_level,
                             boot1=boot1,
                             time_required=difftime(after_boot,before_boot));

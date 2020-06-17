@@ -10,12 +10,20 @@ print.funreg_mediation <- function(x, ...) {
   cat("======================================================= \n");
   cat("Functional Regression Mediation Function Output \n");
   cat("======================================================= \n");
+  cat("Indirect effect estimate:\n")
+  cat(x$original_results$beta_estimate);
   cat("Indirect effect bootstrap estimate:\n");
   cat(x$bootstrap_results$beta_boot_estimate);
   cat("\nIndirect effect bootstrap confidence interval:");
   cat("\n... by normal method:\n");
   cat(c(round(x$bootstrap_results$beta_boot_norm_lower,4), ", ",
         round(x$bootstrap_results$beta_boot_norm_upper,4)));
+  cat("\n... by basic method:\n");
+  cat(c(round(x$bootstrap_results$beta_boot_basic_lower,4), ", ",
+        round(x$bootstrap_results$beta_boot_basic_upper,4)));
+  cat("\n... by BCa method:\n");
+  cat(c(round(x$bootstrap_results$beta_boot_bca_lower,4), ", ",
+        round(x$bootstrap_results$beta_boot_bca_upper,4)));
   cat("\n... by percentile method:\n");
   cat(c(round(x$bootstrap_results$beta_boot_perc_lower,4), ", ",
           round(x$bootstrap_results$beta_boot_perc_upper,4))); 
