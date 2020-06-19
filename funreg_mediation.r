@@ -295,7 +295,7 @@ funreg_mediation <- function(data,
   wide_data <- data.frame(cbind(wide_id=wide_id, 
                                 wide_treatment=wide_treatment, 
                                 wide_outcome=wide_outcome,
-                                wide_mediator=wide_mediator));
+                                wide_mediator=wide_mediator)); 
   wide_id_column <- 1;
   wide_treatment_column <- 2;
   wide_outcome_column <- 3;
@@ -341,6 +341,7 @@ funreg_mediation <- function(data,
     #--- EFFECT OF MEDIATOR M AND TREATMENT X ON OUTCOME Y ---;
 	lf <- refund::lf;
     pfr_formula <- wide_outcome~lf(wide_mediator,
+                                   argvals=observed_time_grid,
                                    presmooth="interpolate")+wide_treatment;
     if (num_covariates_on_outcome>0) {
       for (this_one in 1:num_covariates_on_outcome) {  
