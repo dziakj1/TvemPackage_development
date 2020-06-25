@@ -2,9 +2,10 @@ select_tvem <- function(max_knots=5,
                         keep_going_if_too_few=FALSE,
                         use_bic=FALSE,
                         penalize=FALSE,
+                        print_output=TRUE,
                         ...) { 
-  #' select_tvem:  Select number of knots for an unpenalized TVEM.
-  #' @param max_knots  The maximum number of knots to try (0 through max_knots)
+  #' select_tvem:  Select number of interior knots for an unpenalized TVEM.
+  #' @param max_knots  The maximum number of interior knots to try (0 through max_knots)
   #' @param keep_going_if_too_few  Whether to continue in a stepwise fashion if the max_knots 
   #' does not seem to be high enough
   #' @param use_bic Whether to use BIC (FALSE) instead of AIC (TRUE) when selecting the best 
@@ -12,13 +13,11 @@ select_tvem <- function(max_knots=5,
   #' pseudolikelihood rather than the unknown true likelihood.  However, for BIC, the
   #' sample size is taken to be the number of subjects, not the number of observations.
   #' @param penalize Whether to also include a penalty function in estimation
+  #' @param print_output Whether to print the pseudolikelihoods obtained for each candidate number of interior knots.
   #' @param  ... Other inputs to be sent along to each call to the tvem function. 
   #' 
-  #' @return A list with two components:
-  #' \describe{
-  #' \item{ICsTable}{The different numbers of knots which were tried.}
-  #' \item{bestFit}{The tvem object containing the results of the fitted model.}
-  #' }
+  #' @return A TVEM object for the fitted model, with an additional component containing
+  #' a table of information criteria.
   #' @export
   
   args1 <- match.call();  
@@ -34,8 +33,8 @@ select_tvem <- function(max_knots=5,
     more_args$use_naive_se <- TRUE;
     more_args$print_gam_formula <- FALSE; 
     more_args <- more_args[ (names(more_args)!="max_knots")  &
-                             (names(more_args)!="keep_going_if_too_few") & 
-                             (names(more_args)!="use_bic")];
+                              (names(more_args)!="keep_going_if_too_few") & 
+                              (names(more_args)!="use_bic")];
     # I got this trick from https://statisticsglobe.com/remove-element-from-list-in-r ;
     #    ans1 <- try(suppressWarnings(do.call(tvem, more_args)));
     ans1 <- do.call(tvem, more_args); 
@@ -63,7 +62,6 @@ select_tvem <- function(max_knots=5,
     } 
   } 
   best_num_knots <- num_knots_values[which.min(IC_values)];  
-  print(paste("Selected",best_num_knots,"interior knots."));
   more_args <- as.list(args1)[-1];
   more_args$num_knots <- best_num_knots;
   more_args$use_naive_se <- FALSE; 
@@ -72,5 +70,9 @@ select_tvem <- function(max_knots=5,
                             (names(more_args)!="use_bic")];
   ans1 <- do.call(tvem, more_args);
   ans1$ICs_table <- cbind(knots=num_knots_values, ic=IC_values);
+  if (print_output) {
+    print(ans1$ICs_table);
+    print(paste("Selected",best_num_knots,"interior knots."));
+  }
   return(ans1);
 }

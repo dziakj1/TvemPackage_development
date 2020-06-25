@@ -11,17 +11,17 @@
 #' @param prop_obs_observed Proportion of these that are actually observed
 #' @param sigma_x1 Standard deviation of covariate 1, assumed homoskedastic over time
 #' @param sigma_x2 Standard deviation of covariate 2, assumed homoskedastic over time
-#' @param truncate_for_realism Whether to prevent simulated values from going below 0 or above 10, in order to imitate survey data
-#' @param round_digits Number of digits to round data to
+#' @param truncate_for_realism Whether to prevent simulated values from going below 0 or above 10, in order to imitate survey data; used only for normally distributed outcomes
+#' @param round_digits Number of digits at which to round the generated data; used only for normally distributed outcomes 
 #' @param x1_short_term_rho Correlation between adjacent measurements of covariate 1
 #' @param x2_short_term_rho Correlation between adjacent measurements of covariate 2
-#' @param sigma_y  Error standard deviation of y, only used if it is normal and not binary
+#' @param sigma_y  Error standard deviation of y, only used if the outcomes are to be normal rather than binary 
 #' @param mu_x1_function Mean of covariate 1 as function of time
 #' @param mu_x2_function Mean of covariate 2 as function of time 
 #' @param beta0_y_function Intercept of TVEM as function of time
 #' @param beta1_y_function TVEM coefficient of covariate 1 as function of time  
 #' @param beta2_y_function TVEM coefficient of covariate 2 as function of time 
-#' @param y_short_term_rho Correlation between adjacent measurements of y, only used if it is normal and not binary 
+#' @param y_short_term_rho Correlation between adjacent measurements of y, only used if it is to be normal and not binary 
 #' @return A simulated dataset with the following variables:
 #' \describe{
 #' \item{subject_id}{Subject ID}
@@ -30,6 +30,11 @@
 #' \item{x2}{Second covariate}
 #' \item{y}{Outcome variable}
 #' }   
+#'
+#' @keywords Statistics|datagen
+#'
+#' @importFrom stats rbinom rnorm
+#'
 #' @export
 
 simulate_tvem_example <- function(
@@ -47,7 +52,7 @@ simulate_tvem_example <- function(
   sigma_y = 1.5,
   mu_x1_function = function(t) {6 - 2*sqrt(pmax(0,(t/7)-.2))},
   mu_x2_function = function(t) {3 + sqrt(pmax(0,(t/7)-.5))},
-  beta0_y_function = function(t) {2 - .3*sqrt(t/7)},
+  beta0_y_function = function(t) {1 - .3*sqrt(t/7)},
   beta1_y_function = function(t) {.5*(t/7)^2}, 
   beta2_y_function = function(t) {rep(.2,length(t))},
   y_short_term_rho = 0.8 
@@ -59,7 +64,7 @@ simulate_tvem_example <- function(
   beta1_y <- beta1_y_function(possible_observation_times);
   beta2_y <- beta2_y_function(possible_observation_times);
   n_obs_per_subject <- rbinom(n_subjects,n_obs_possible,prop_obs_observed);
-    # Generate X1;
+  # Generate X1;
   x1_error_term_AR1 <- matrix(NA, n_subjects, n_obs_possible);
   x1_error_term_AR1[,1] <- rnorm(n_subjects);
   for (j in 2:n_obs_possible) {
@@ -86,16 +91,16 @@ simulate_tvem_example <- function(
     mu_y <- plogis(eta_y); 
     y <- apply(mu_y,MARGIN=c(1,2),FUN=rbinom,n=1,size=1);
   } else {
-    mu_y <- matrix_beta0_y + matrix_beta1_y*x1 + matrix_beta2_y*x2;
-    y_error_term_AR1 <- matrix(NA, n_subjects, n_obs_possible);
-    y_error_term_AR1[,1] <- rnorm(n_subjects);
-    for (j in 2:n_obs_possible) {
-      y_error_term_AR1[,j] <- y_short_term_rho*y_error_term_AR1[,j-1] + 
-        sqrt(1-y_short_term_rho^2)*rnorm(n_subjects);
-    }
-    y <- mu_y + sigma_y * y_error_term_AR1;  
-    y <- round(y,round_digits);
-  } 
+      mu_y <- matrix_beta0_y + matrix_beta1_y*x1 + matrix_beta2_y*x2;
+      y_error_term_AR1 <- matrix(NA, n_subjects, n_obs_possible);
+      y_error_term_AR1[,1] <- rnorm(n_subjects);
+      for (j in 2:n_obs_possible) {
+        y_error_term_AR1[,j] <- y_short_term_rho*y_error_term_AR1[,j-1] + 
+          sqrt(1-y_short_term_rho^2)*rnorm(n_subjects);
+      }
+      y <- mu_y + sigma_y * y_error_term_AR1;  
+      y <- round(y,round_digits);
+    } 
   for (this_subject in 1:n_subjects) {
     unobserved_for_this_subject <- sample(1:ncol(y),size=n_obs_possible - n_obs_per_subject[this_subject]);
     y[this_subject,unobserved_for_this_subject] <- NA;

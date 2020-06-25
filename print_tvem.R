@@ -1,6 +1,6 @@
 #' print.tvem:  Print output from a model that was fit by the tvem function.
 #' 
-#' @param x The tvem object (output of the tvem function)
+#' @param x The tvem object (output of the tvem or select_tvem function)
 #' @param ornate Whether to print lines between different sections of the output for easier reading.
 #' @param ... Further arguments currently not supported
 #' 
@@ -47,6 +47,10 @@ print.tvem <- function(x, ornate=TRUE, ...) {
   cat(paste("\nPseudolikelihood BIC:",round(x$model_information$pseudo_bic,2),"\n"));
   if (x$model_information$used_listwise_deletion) {
     cat("Note: Used listwise deletion for missing data.\n");
+  }
+  if (!is.null(x$ICs_table)) {
+    cat("Model selection table for number of interior knots:\n")
+    print(x$ICs_table);
   }
   cat(divider);
 }

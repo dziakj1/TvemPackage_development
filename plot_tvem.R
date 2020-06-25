@@ -19,6 +19,12 @@
 #' outliers or skew in TVEM with a numeric
 #' outcome.  They are not likely to be as useful 
 #' in TVEM with a binary or other discrete outcome.
+#' @param exponentiate If this is set to TRUE and if
+#' the TVEM had a binary outcome, then the exponentiated 
+#' coefficient functions (representing odds and odds
+#' ratios) will be plotted rather than the usual
+#' coefficient functions (representing log odds and log
+#' odds ratios).
 #' @param ... Further arguments currently not supported
 #' 
 #' @export
@@ -27,8 +33,10 @@
 plot.tvem <- function(x,
                       use_panes=TRUE,
                       which_plot=NULL,
-                      diagnostics=FALSE, ...) {
+                      diagnostics=FALSE, 
+                      exponentiate=FALSE, ...) {
   if (diagnostics) {
+    if (exponentiate) {stop("Error:  This function cannot currently provide diagnostic plots at the odds ratio scale.");}
     if (use_panes) {par(mfrow=c(1,2))};
     hist(x$back_end_model$fitted,
          main="Residuals",
@@ -52,22 +60,45 @@ plot.tvem <- function(x,
     the_grid <- x$time_grid;
     temp_plot_function <- function(the_var_name,
                                    the_grid,
-                                   the_coef) {
-      plot(x=the_grid,
-           y=the_coef$estimate,
-           main=paste("TVEM coefficient:\n",the_var_name),
-           xlab=expression(t),
-           ylab=expression(beta(t)),
-           ylim=c(ymin,ymax),
-           type="l",
-           lty="solid",
-           lwd=2, 
-           mgp=c(2,1,0));
-      abline(h=0,lty="dotted");
-      lines(x=the_grid,
-            y=the_coef$lower);
-      lines(x=the_grid,
-            y=the_coef$upper);
+                                   the_coef,
+                                   ymin,
+                                   ymax,
+                                   exponentiate) {
+      if (exponentiate) {
+        plot(x=the_grid,
+             y=exp(the_coef$estimate),
+             main=paste("Exponentiated TVEM coefficient:\n",the_var_name),
+             xlab=expression(t),
+             ylab=expression(exp(beta(t))),
+             ylim=c(exp(ymin),exp(ymax)),
+             type="l",
+             lty="solid",
+             lwd=2, 
+             mgp=c(2,1,0));
+        abline(h=1,lty="dotted");
+        lines(x=the_grid,
+              y=exp(the_coef$lower));
+        lines(x=the_grid,
+              y=exp(the_coef$upper));
+        
+      } else {
+        plot(x=the_grid,
+             y=the_coef$estimate,
+             main=paste("TVEM coefficient:\n",the_var_name),
+             xlab=expression(t),
+             ylab=expression(beta(t)),
+             ylim=c(ymin,ymax),
+             type="l",
+             lty="solid",
+             lwd=2, 
+             mgp=c(2,1,0));
+        abline(h=0,lty="dotted");
+        lines(x=the_grid,
+              y=the_coef$lower);
+        lines(x=the_grid,
+              y=the_coef$upper);
+        
+      }
       return(0);
     }
     if (is.null(which_plot)) {
@@ -78,7 +109,10 @@ plot.tvem <- function(x,
         ymax <- max(0,max(the_coef$upper));
         temp_plot_function(the_var_name,
                            the_grid,
-                           the_coef);
+                           the_coef,
+                           ymin,
+                           ymax,
+                           exponentiate);
       }
     } else {
       the_coef <- x$grid_fitted_coefficients[[which_plot]];
@@ -87,7 +121,10 @@ plot.tvem <- function(x,
       ymax <- max(0,max(the_coef$upper));
       temp_plot_function(the_var_name,
                          the_grid,
-                         the_coef);
+                         the_coef,
+                         ymin,
+                         ymax,
+                         exponentiate);
     }
   }
 }
