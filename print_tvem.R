@@ -32,7 +32,7 @@ print.tvem <- function(x, ornate=TRUE, ...) {
   cat(paste(x$model_information$n_subjects));
   cat("\nEffects specified as time-varying:  ");
   cat(paste(names(x$grid_fitted_coefficients),sep=" ",collapse=", ")); 
-  cat("\nYou can use the plot_tvem function to view their plots.\n");
+  cat("\nYou can use the plot function to view their plots.\n");
   if (!is.null(x$invar_effects_estimates)) {
     cat(divider)
     cat("Effects specified as non-time-varying: \n");
