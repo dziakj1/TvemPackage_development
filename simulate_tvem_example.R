@@ -11,7 +11,10 @@
 #' @param prop_obs_observed Proportion of these that are actually observed
 #' @param sigma_x1 Standard deviation of covariate 1, assumed homoskedastic over time
 #' @param sigma_x2 Standard deviation of covariate 2, assumed homoskedastic over time
-#' @param truncate_for_realism Whether to prevent simulated values from going below 0 or above 10, in order to imitate survey data; used only for normally distributed outcomes
+#' @param truncate_for_realism Whether to prevent simulated values from going below 0 or above 10, 
+#' in order to imitate survey data; used only for normally distributed outcomes.
+#' Set this to FALSE if you are running a simulation, in order to avoid losing coverage
+#' due to departing from the parametric model.
 #' @param round_digits Number of digits at which to round the generated data; used only for normally distributed outcomes 
 #' @param x1_short_term_rho Correlation between adjacent measurements of covariate 1
 #' @param x2_short_term_rho Correlation between adjacent measurements of covariate 2
