@@ -213,6 +213,23 @@ tvem <- function(data,
       family <- poisson();
     }
   }
+  if ((family$family=="gaussian") &
+      (family$link!="identity")) {
+    stop("Currently the tvem function only supports the identity link for Gaussian outcomes.")
+  }
+  if ((family$family=="binomial") &
+      (family$link!="logit")) {
+    stop("Currently the tvem function only supports the logit link for binomial outcomes.")
+  }
+  if ((family$family=="poisson") &
+      (family$link!="log")) {
+    stop("Currently the tvem function only supports the log link for Poisson outcomes.")
+  }
+  if ((family$family!="gaussian")&
+      (family$family!="binomial")&
+      (family$family!="poisson")) {
+    stop("This version of tvem only handles the gaussian(), binomial() and poisson() families.")
+  }
   orig_formula <- formula; 
   the_terms <- terms(formula);
   whether_intercept <- attr(the_terms,"intercept");
@@ -336,6 +353,11 @@ tvem <- function(data,
       bam_formula <- update(bam_formula,as.formula(new_text));
     }
   } 
+  if (family$family=="binomial") {
+    if (max(data_for_analysis[,response_name],na.rm=TRUE)>1) {
+      stop("Currently the only kind of binomial data supported in the tvem function is binary.")
+    }
+  }
   if (print_gam_formula) {print(bam_formula);}
   model1 <- mgcv::bam(bam_formula,
                 data=data_for_analysis,
@@ -386,11 +408,21 @@ tvem <- function(data,
   } else {
     meat <- matrix(0,npar,npar);  # apologies to vegetarians -- 
     # peanut butter or vegetables are also fine!
+    working_sigsqd <- var(model1$residuals);
     for (i in unique(id_variable[which(!is.na(id_variable))])) {
-      these <- which(id_variable==i); 
+      these <- which(id_variable==i);
+      residuals_these <- model1$model$y[these] - model1$fitted.values[these];
+      if (family$family=="gaussian") {
+        multiplier <- 1/working_sigsqd;
+      }
+      if (family$family=="binomial") {
+        multiplier <- 1;
+      }
       if (length(these)>0) {
-        meat <- meat + tcrossprod(crossprod(
-          design[these,,drop=FALSE],model1$residuals[these ]));
+        meat <- meat + t(design[these,,drop=FALSE])%*%
+          (outer(multiplier*residuals_these,
+                 multiplier*residuals_these))%*%
+          design[these,,drop=FALSE];
       }
     }  
     sandwich <- bread %*% meat %*% bread;  
@@ -413,9 +445,9 @@ tvem <- function(data,
   grid_estimated_b0 <- grid_basis_for_b0 %*% model1$coefficients[indices_for_b0];
   cov_mat_for_b0 <- sandwich[indices_for_b0,indices_for_b0];
   # Fitted b0 on observed times:
-  temp_function <- function(i){return(tcrossprod(basis_for_b0[i,] %*%
-                                                   cov_mat_for_b0, 
-                                                 basis_for_b0[i,]))};
+  temp_function <- function(i){return(t(basis_for_b0[i,]) %*%
+                                        cov_mat_for_b0 %*%
+                                        basis_for_b0[i,])};
   standard_error_b0 <- drop(sqrt(sapply(X=1:nrow(basis_for_b0),
                                         FUN=temp_function)));
   upper_b0 <- estimated_b0 + crit_value*standard_error_b0;
@@ -425,9 +457,9 @@ tvem <- function(data,
                                                        upper = upper_b0,
                                                        lower = lower_b0));
   # Fitted b0 on regular grid:
-  temp_function <- function(i){return(tcrossprod(grid_basis_for_b0[i,] %*%
-                                                   cov_mat_for_b0, 
-                                                 grid_basis_for_b0[i,]))};
+  temp_function <- function(i){return(t(grid_basis_for_b0[i,]) %*%
+                                        cov_mat_for_b0 %*%
+                                        grid_basis_for_b0[i,])};
   grid_standard_error_b0 <- drop(sqrt(sapply(X=1:nrow(grid_basis_for_b0),
                                              FUN=temp_function)));
   grid_upper_b0 <- grid_estimated_b0 + crit_value*grid_standard_error_b0;
@@ -454,9 +486,9 @@ tvem <- function(data,
       estimated_this_b_hard_way <- as.vector(basis_for_b0%*%model1$coefficients[indices_for_this_b]);
       stopifnot(max(abs(estimated_this_b_hard_way-estimated_b[,i]), na.rm=TRUE)<1e-10); #just for double checking;
       cov_mat_for_this_b <- sandwich[indices_for_this_b,indices_for_this_b];
-      temp_function <- function(i){return(tcrossprod(basis_for_b0[i,] %*%
-                                                       cov_mat_for_this_b, 
-                                                     basis_for_b0[i,]))};
+      temp_function <- function(i){return(t(basis_for_b0[i,]) %*%
+                                            cov_mat_for_this_b %*% 
+                                            basis_for_b0[i,])};
       standard_error_this_b <- drop(sqrt(sapply(X=1:nrow(basis_for_b0),
                                                 FUN=temp_function)));
       upper_this_b <- estimated_this_b + crit_value*standard_error_this_b;
@@ -468,9 +500,9 @@ tvem <- function(data,
       names(temp_list) <- this_covariate_name;
       fitted_coefficients <- c(fitted_coefficients,
                                temp_list);
-      temp_function <- function(i){return(tcrossprod(grid_basis_for_b0[i,] %*%
-                                                       cov_mat_for_this_b, 
-                                                     grid_basis_for_b0[i,]))};
+      temp_function <- function(i){return(t(grid_basis_for_b0[i,]) %*%
+                                            cov_mat_for_this_b %*%
+                                            grid_basis_for_b0[i,])};
       grid_standard_error_this_b <- drop(sqrt(sapply(X=1:nrow(grid_basis_for_b0),
                                                      FUN=temp_function)));
       grid_upper_this_b <- grid_estimated_this_b + crit_value*grid_standard_error_this_b;
