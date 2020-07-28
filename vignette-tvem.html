@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="John J. Dziak" />
+
+<meta name="date" content="2020-07-16" />
+
+<title>Fitting time-varying effects models</title>
+
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Fitting time-varying effects models</h1>
+<h4 class="author">John J. Dziak</h4>
+<h4 class="date">2020-07-16</h4>
+
+
+
+<p>In this example we simulate a longitudinal dataset and fit a simple time-varying coefficient model to it using the tvem package. We show that this can be done for either a continuous or a binary outcome variable. Time-varying coefficient models are discussed further by Tan, Shiyko, Li, Li and Dierker (2012) and are an application of the varying-coefficient models approach of Hastie and Tibshirani (1993) to intensive longitudinal data.</p>
+<p>Before running the examples, first install and load the tvem package. A .zip or .tar.gz file containing the package is available at <a href="https://github.com/dziakj1/TvemPackage">https://github.com/dziakj1/TvemPackage</a>, and it can then be used with the install.packages() function in <a href="https://www.r-project.org">R code</a>, Packages &gt; Install Package(s) from Local Files in the <a href="https://www.r-project.org">R GUI</a>, or Tools &gt; Install Packages in <a href="https://www.rstudio.com">RStudio</a>, to install the package. We also intend to submit this package to CRAN, from where it would then be able to be installed directly. Of course, if you are viewing this guide from within R using the vignette() function, then the package is already installed.</p>
+<p>After you install the package on your system, you can then load it as usual with the library() function.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(tvem)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="co">#&gt; Loading required package: mgcv</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="co">#&gt; Loading required package: nlme</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co">#&gt; This is mgcv 1.8-31. For overview type &#39;help(&quot;mgcv-package&quot;)&#39;.</span></span></code></pre></div>
+<div id="example-with-a-continuous-outcome-variable" class="section level1">
+<h1>Example with a continuous outcome variable</h1>
+<p>The tvem package has a function for simulating a dataset. It is good to start by specifying a random seed.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">set.seed</span>(<span class="dv">123</span>);</span>
+<span id="cb2-2"><a href="#cb2-2"></a>the_data &lt;-<span class="st"> </span><span class="kw">simulate_tvem_example</span>();</span></code></pre></div>
+<div id="exploring-the-dataset" class="section level2">
+<h2>Exploring the dataset</h2>
+<p>When analyzing any dataset, it is important to examine it descriptively first.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">print</span>(<span class="kw">head</span>(the_data));</span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="co">#&gt;   subject_id time  x1  x2   y</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#&gt; 1          1 0.00 5.3 5.8 0.9</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#&gt; 2          1 0.05 6.4 5.3 0.0</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co">#&gt; 3          1 0.10 5.4 5.5  NA</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="co">#&gt; 4          1 0.15 5.7 3.2  NA</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="co">#&gt; 5          1 0.20 5.8 2.8  NA</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="co">#&gt; 6          1 0.25 8.7 3.2 1.9</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="kw">print</span>(<span class="kw">summary</span>(the_data));</span>
+<span id="cb3-10"><a href="#cb3-10"></a><span class="co">#&gt;    subject_id          time            x1              x2        </span></span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="co">#&gt;  Min.   :  1.00   Min.   :0.00   Min.   : 0.00   Min.   : 0.000  </span></span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="co">#&gt;  1st Qu.: 75.75   1st Qu.:1.75   1st Qu.: 3.60   1st Qu.: 1.900  </span></span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="co">#&gt;  Median :150.50   Median :3.50   Median : 5.00   Median : 3.300  </span></span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="co">#&gt;  Mean   :150.50   Mean   :3.50   Mean   : 5.02   Mean   : 3.326  </span></span>
+<span id="cb3-15"><a href="#cb3-15"></a><span class="co">#&gt;  3rd Qu.:225.25   3rd Qu.:5.25   3rd Qu.: 6.40   3rd Qu.: 4.700  </span></span>
+<span id="cb3-16"><a href="#cb3-16"></a><span class="co">#&gt;  Max.   :300.00   Max.   :7.00   Max.   :10.00   Max.   :10.000  </span></span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="co">#&gt;                                                                  </span></span>
+<span id="cb3-18"><a href="#cb3-18"></a><span class="co">#&gt;        y        </span></span>
+<span id="cb3-19"><a href="#cb3-19"></a><span class="co">#&gt;  Min.   :0.000  </span></span>
+<span id="cb3-20"><a href="#cb3-20"></a><span class="co">#&gt;  1st Qu.:1.000  </span></span>
+<span id="cb3-21"><a href="#cb3-21"></a><span class="co">#&gt;  Median :2.200  </span></span>
+<span id="cb3-22"><a href="#cb3-22"></a><span class="co">#&gt;  Mean   :2.308  </span></span>
+<span id="cb3-23"><a href="#cb3-23"></a><span class="co">#&gt;  3rd Qu.:3.400  </span></span>
+<span id="cb3-24"><a href="#cb3-24"></a><span class="co">#&gt;  Max.   :9.600  </span></span>
+<span id="cb3-25"><a href="#cb3-25"></a><span class="co">#&gt;  NA&#39;s   :29647</span></span></code></pre></div>
+<p>The dataset is in long form (one row per observation, with multiple observation times for each participant). There are 300 participants. The observation time ranges from 0 (thought of as the beginning of an intensive study on people undergoing an intervention or lifestyle change) to 7 (imagined as the end of the study seven days later). There is a single response variable <span class="math inline">\(y\)</span>, and two predictor variables (covariates), <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>. In the context of an intensive longitudinal study with human participants, these variables might be ratings of different feelings, symptoms or behaviors, reported a few times per day at random times, during seven days following an event (such as the beginning of an intervention, treatment, lifestyle change, etc.). The values of the covariates and the response vary over time within subject. The analyst wishes to find out whether their means change systematically over time, whether they are interrelated, and whether this relationship, if it exists, changes over time.</p>
+</div>
+<div id="plotting-average-change-over-time" class="section level2">
+<h2>Plotting average change over time</h2>
+<p>One easy thing to do is to investigate whether and how the response changes over time on average. This is simply curve fitting, similar to polynomial regression, but can be fit using the TVEM function, in an approach sometimes called `intercept-only TVEM.’ This approach uses a spline function to approximate the average change in <span class="math inline">\(y\)</span> over time.</p>
+<p>By default, the tvem function will fit a penalized B-spline (de Boor, 1972), which is called a ``P-spline’’ in the terminology of Eilers and Marx (1996). This approach uses an automatic tuning penalty to choose the level of smoothness versus flexibility of the fitted function. It is similar, though not identical, to the P-splines used in the Methodology Center’s %TVEM macro for the SAS programming language. Those P-splines were penalized truncated power splines (Li et al., 2017; see Ruppert, Wand &amp; Carroll, 2003).</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>model1 &lt;-<span class="st"> </span><span class="kw">tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb4-2"><a href="#cb4-2"></a>               <span class="dt">formula=</span>y<span class="op">~</span><span class="dv">1</span>,</span>
+<span id="cb4-3"><a href="#cb4-3"></a>               <span class="dt">id=</span>subject_id,</span>
+<span id="cb4-4"><a href="#cb4-4"></a>               <span class="dt">time=</span>time);</span></code></pre></div>
+<p>You also have the option to turn off the penalty and control the smoothness yourself, by specifying the number of interior knots, here 2.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>model1 &lt;-<span class="st"> </span><span class="kw">tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb5-2"><a href="#cb5-2"></a>               <span class="dt">formula=</span>y<span class="op">~</span><span class="dv">1</span>,</span>
+<span id="cb5-3"><a href="#cb5-3"></a>               <span class="dt">id=</span>subject_id,</span>
+<span id="cb5-4"><a href="#cb5-4"></a>               <span class="dt">num_knots=</span><span class="dv">2</span>,</span>
+<span id="cb5-5"><a href="#cb5-5"></a>               <span class="dt">penalize=</span><span class="ot">FALSE</span>,</span>
+<span id="cb5-6"><a href="#cb5-6"></a>               <span class="dt">time=</span>time);</span></code></pre></div>
+<p>The implied mean model is <span class="math inline">\(E(y|t) =\beta_0(t)\)</span> Where <span class="math inline">\(t\)</span> is time in days. After fitting the model, you can print a summary and plot the estimated coefficient.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">print</span>(model1);</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="co">#&gt; Response variable:   y </span></span>
+<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept)</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb6-12"><a href="#cb6-12"></a><span class="co">#&gt; Method REML</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb6-14"><a href="#cb6-14"></a><span class="co">#&gt; y ~ s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 6, fx = TRUE)</span></span>
+<span id="cb6-15"><a href="#cb6-15"></a><span class="co">#&gt; Pseudolikelihood AIC: 46234.19</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a><span class="co">#&gt; Pseudolikelihood BIC: 46260.11 </span></span>
+<span id="cb6-17"><a href="#cb6-17"></a><span class="co">#&gt; Note: Used listwise deletion for missing data.</span></span>
+<span id="cb6-18"><a href="#cb6-18"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb6-19"><a href="#cb6-19"></a><span class="kw">plot</span>(model1);</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The plot shows the estimated coefficient function, and approximate estimates for 95% pointwise confidence intervals (not corrected for potential multiple comparisons) for the value of the function at each time.</p>
+<p>We don’t provide for random effects in the current version of this package. Instead, we use a (possibly penalized) form of generalized estimating equations with working independence, and adjust the standard errors for within-subject correlation using a sandwich formula.</p>
+</div>
+<div id="using-the-select_tvem-function" class="section level2">
+<h2>Using the select_tvem function</h2>
+<p>It is a very good idea to examine how the covariate means change over time. That is, we should fit intercept-only TVEM’s for <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>, not just <span class="math inline">\(y\)</span>.</p>
+<p>While doing this, we can take the opportunity to additionally explore yet another way to fit a model using the tvem function, by using the select_tvem function to choose the number of interior knots by an pseudolikelihood equivalent to an AIC or BIC criterion. “Pseudolikelihood” here means that the information criterion doesn’t take within-subject correlation into account, because we are trying to fit a marginal model agnostic to the exact correlation structure. The code below will fit the model with 0 to 5 interior knots, record the fit criterion for each potential choice, and select the one which gives the lowest (best) value of the criterion.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>model2 &lt;-<span class="st"> </span><span class="kw">select_tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb7-2"><a href="#cb7-2"></a>                    <span class="dt">formula =</span> x1<span class="op">~</span><span class="dv">1</span>,</span>
+<span id="cb7-3"><a href="#cb7-3"></a>                    <span class="dt">id=</span>subject_id,</span>
+<span id="cb7-4"><a href="#cb7-4"></a>                    <span class="dt">time=</span>time,</span>
+<span id="cb7-5"><a href="#cb7-5"></a>                    <span class="dt">max_knots=</span><span class="dv">5</span>);</span>
+<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt;      knots       ic</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt; [1,]     0 177522.9</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt; [2,]     1 177475.0</span></span>
+<span id="cb7-9"><a href="#cb7-9"></a><span class="co">#&gt; [3,]     2 177453.0</span></span>
+<span id="cb7-10"><a href="#cb7-10"></a><span class="co">#&gt; [4,]     3 177452.0</span></span>
+<span id="cb7-11"><a href="#cb7-11"></a><span class="co">#&gt; [5,]     4 177448.3</span></span>
+<span id="cb7-12"><a href="#cb7-12"></a><span class="co">#&gt; [6,]     5 177446.4</span></span>
+<span id="cb7-13"><a href="#cb7-13"></a><span class="co">#&gt; [1] &quot;Selected 5 interior knots.&quot;</span></span>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="kw">print</span>(model2);</span>
+<span id="cb7-15"><a href="#cb7-15"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb7-16"><a href="#cb7-16"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb7-17"><a href="#cb7-17"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb7-18"><a href="#cb7-18"></a><span class="co">#&gt; Response variable:   x1 </span></span>
+<span id="cb7-19"><a href="#cb7-19"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb7-20"><a href="#cb7-20"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb7-21"><a href="#cb7-21"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept)</span></span>
+<span id="cb7-22"><a href="#cb7-22"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb7-23"><a href="#cb7-23"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb7-24"><a href="#cb7-24"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb7-25"><a href="#cb7-25"></a><span class="co">#&gt; Method fREML</span></span>
+<span id="cb7-26"><a href="#cb7-26"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb7-27"><a href="#cb7-27"></a><span class="co">#&gt; x1 ~ s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 9, fx = FALSE)</span></span>
+<span id="cb7-28"><a href="#cb7-28"></a><span class="co">#&gt; Pseudolikelihood AIC: 177446.42</span></span>
+<span id="cb7-29"><a href="#cb7-29"></a><span class="co">#&gt; Pseudolikelihood BIC: 177476.67 </span></span>
+<span id="cb7-30"><a href="#cb7-30"></a><span class="co">#&gt; Model selection table for number of interior knots:</span></span>
+<span id="cb7-31"><a href="#cb7-31"></a><span class="co">#&gt;      knots       ic</span></span>
+<span id="cb7-32"><a href="#cb7-32"></a><span class="co">#&gt; [1,]     0 177522.9</span></span>
+<span id="cb7-33"><a href="#cb7-33"></a><span class="co">#&gt; [2,]     1 177475.0</span></span>
+<span id="cb7-34"><a href="#cb7-34"></a><span class="co">#&gt; [3,]     2 177453.0</span></span>
+<span id="cb7-35"><a href="#cb7-35"></a><span class="co">#&gt; [4,]     3 177452.0</span></span>
+<span id="cb7-36"><a href="#cb7-36"></a><span class="co">#&gt; [5,]     4 177448.3</span></span>
+<span id="cb7-37"><a href="#cb7-37"></a><span class="co">#&gt; [6,]     5 177446.4</span></span>
+<span id="cb7-38"><a href="#cb7-38"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb7-39"><a href="#cb7-39"></a><span class="kw">plot</span>(model2);</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The highest number of interior knots in the range is selected. If the resulting plot looks overly complicated and uninterpretable, it might be reasonable to use a lower number of interior knots anyway. On the other hand, if it looks interpretable, it would be reasonable to run the function again with a higher value of max_knots, to see whether there might be an even better fit that had not been found yet. Note that the individual knots and their locations do not have a special interpretation (as they do in some ``changepoint’’ models); they are just a tool to make the fitted function more flexible than a simple polynomial would be. Let us try again with a maximum of ten interior knots.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>model2 &lt;-<span class="st"> </span><span class="kw">select_tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb8-2"><a href="#cb8-2"></a>                    <span class="dt">formula =</span> x1<span class="op">~</span><span class="dv">1</span>,</span>
+<span id="cb8-3"><a href="#cb8-3"></a>                    <span class="dt">id=</span>subject_id,</span>
+<span id="cb8-4"><a href="#cb8-4"></a>                    <span class="dt">time=</span>time,</span>
+<span id="cb8-5"><a href="#cb8-5"></a>                    <span class="dt">max_knots=</span><span class="dv">10</span>);</span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="co">#&gt;       knots       ic</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="co">#&gt;  [1,]     0 177522.9</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="co">#&gt;  [2,]     1 177475.0</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="co">#&gt;  [3,]     2 177453.0</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a><span class="co">#&gt;  [4,]     3 177452.0</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="co">#&gt;  [5,]     4 177448.3</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a><span class="co">#&gt;  [6,]     5 177446.4</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a><span class="co">#&gt;  [7,]     6 177445.6</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a><span class="co">#&gt;  [8,]     7 177445.5</span></span>
+<span id="cb8-15"><a href="#cb8-15"></a><span class="co">#&gt;  [9,]     8 177447.3</span></span>
+<span id="cb8-16"><a href="#cb8-16"></a><span class="co">#&gt; [10,]     9 177444.9</span></span>
+<span id="cb8-17"><a href="#cb8-17"></a><span class="co">#&gt; [11,]    10 177441.9</span></span>
+<span id="cb8-18"><a href="#cb8-18"></a><span class="co">#&gt; [1] &quot;Selected 10 interior knots.&quot;</span></span>
+<span id="cb8-19"><a href="#cb8-19"></a><span class="kw">print</span>(model2);</span>
+<span id="cb8-20"><a href="#cb8-20"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb8-21"><a href="#cb8-21"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb8-22"><a href="#cb8-22"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb8-23"><a href="#cb8-23"></a><span class="co">#&gt; Response variable:   x1 </span></span>
+<span id="cb8-24"><a href="#cb8-24"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb8-25"><a href="#cb8-25"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb8-26"><a href="#cb8-26"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept)</span></span>
+<span id="cb8-27"><a href="#cb8-27"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb8-28"><a href="#cb8-28"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb8-29"><a href="#cb8-29"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb8-30"><a href="#cb8-30"></a><span class="co">#&gt; Method fREML</span></span>
+<span id="cb8-31"><a href="#cb8-31"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb8-32"><a href="#cb8-32"></a><span class="co">#&gt; x1 ~ s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 14, fx = FALSE)</span></span>
+<span id="cb8-33"><a href="#cb8-33"></a><span class="co">#&gt; Pseudolikelihood AIC: 177441.89</span></span>
+<span id="cb8-34"><a href="#cb8-34"></a><span class="co">#&gt; Pseudolikelihood BIC: 177481.16 </span></span>
+<span id="cb8-35"><a href="#cb8-35"></a><span class="co">#&gt; Model selection table for number of interior knots:</span></span>
+<span id="cb8-36"><a href="#cb8-36"></a><span class="co">#&gt;       knots       ic</span></span>
+<span id="cb8-37"><a href="#cb8-37"></a><span class="co">#&gt;  [1,]     0 177522.9</span></span>
+<span id="cb8-38"><a href="#cb8-38"></a><span class="co">#&gt;  [2,]     1 177475.0</span></span>
+<span id="cb8-39"><a href="#cb8-39"></a><span class="co">#&gt;  [3,]     2 177453.0</span></span>
+<span id="cb8-40"><a href="#cb8-40"></a><span class="co">#&gt;  [4,]     3 177452.0</span></span>
+<span id="cb8-41"><a href="#cb8-41"></a><span class="co">#&gt;  [5,]     4 177448.3</span></span>
+<span id="cb8-42"><a href="#cb8-42"></a><span class="co">#&gt;  [6,]     5 177446.4</span></span>
+<span id="cb8-43"><a href="#cb8-43"></a><span class="co">#&gt;  [7,]     6 177445.6</span></span>
+<span id="cb8-44"><a href="#cb8-44"></a><span class="co">#&gt;  [8,]     7 177445.5</span></span>
+<span id="cb8-45"><a href="#cb8-45"></a><span class="co">#&gt;  [9,]     8 177447.3</span></span>
+<span id="cb8-46"><a href="#cb8-46"></a><span class="co">#&gt; [10,]     9 177444.9</span></span>
+<span id="cb8-47"><a href="#cb8-47"></a><span class="co">#&gt; [11,]    10 177441.9</span></span>
+<span id="cb8-48"><a href="#cb8-48"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb8-49"><a href="#cb8-49"></a><span class="kw">plot</span>(model2);</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The fit seems to continue slightly improving with higher and higher numbers of knots, but the differences in fit are so small no further insight would be gained by trying more. The use_bic option can be set to TRUE in order to use a more parsimonious criterion that might be minimized at a smaller number of knots.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>model2 &lt;-<span class="st"> </span><span class="kw">select_tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb9-2"><a href="#cb9-2"></a>                    <span class="dt">formula =</span> x1<span class="op">~</span><span class="dv">1</span>,</span>
+<span id="cb9-3"><a href="#cb9-3"></a>                    <span class="dt">id=</span>subject_id,</span>
+<span id="cb9-4"><a href="#cb9-4"></a>                    <span class="dt">use_bic=</span><span class="ot">TRUE</span>,</span>
+<span id="cb9-5"><a href="#cb9-5"></a>                    <span class="dt">time=</span>time,</span>
+<span id="cb9-6"><a href="#cb9-6"></a>                    <span class="dt">max_knots=</span><span class="dv">10</span>);</span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="co">#&gt;       knots       ic</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="co">#&gt;  [1,]     0 177541.3</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="co">#&gt;  [2,]     1 177497.2</span></span>
+<span id="cb9-10"><a href="#cb9-10"></a><span class="co">#&gt;  [3,]     2 177478.9</span></span>
+<span id="cb9-11"><a href="#cb9-11"></a><span class="co">#&gt;  [4,]     3 177481.2</span></span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="co">#&gt;  [5,]     4 177477.1</span></span>
+<span id="cb9-13"><a href="#cb9-13"></a><span class="co">#&gt;  [6,]     5 177476.7</span></span>
+<span id="cb9-14"><a href="#cb9-14"></a><span class="co">#&gt;  [7,]     6 177477.7</span></span>
+<span id="cb9-15"><a href="#cb9-15"></a><span class="co">#&gt;  [8,]     7 177479.6</span></span>
+<span id="cb9-16"><a href="#cb9-16"></a><span class="co">#&gt;  [9,]     8 177481.4</span></span>
+<span id="cb9-17"><a href="#cb9-17"></a><span class="co">#&gt; [10,]     9 177480.7</span></span>
+<span id="cb9-18"><a href="#cb9-18"></a><span class="co">#&gt; [11,]    10 177481.2</span></span>
+<span id="cb9-19"><a href="#cb9-19"></a><span class="co">#&gt; [1] &quot;Selected 5 interior knots.&quot;</span></span>
+<span id="cb9-20"><a href="#cb9-20"></a><span class="kw">print</span>(model2);</span>
+<span id="cb9-21"><a href="#cb9-21"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb9-22"><a href="#cb9-22"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb9-23"><a href="#cb9-23"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb9-24"><a href="#cb9-24"></a><span class="co">#&gt; Response variable:   x1 </span></span>
+<span id="cb9-25"><a href="#cb9-25"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb9-26"><a href="#cb9-26"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb9-27"><a href="#cb9-27"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept)</span></span>
+<span id="cb9-28"><a href="#cb9-28"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb9-29"><a href="#cb9-29"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb9-30"><a href="#cb9-30"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb9-31"><a href="#cb9-31"></a><span class="co">#&gt; Method fREML</span></span>
+<span id="cb9-32"><a href="#cb9-32"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb9-33"><a href="#cb9-33"></a><span class="co">#&gt; x1 ~ s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 9, fx = FALSE)</span></span>
+<span id="cb9-34"><a href="#cb9-34"></a><span class="co">#&gt; Pseudolikelihood AIC: 177446.42</span></span>
+<span id="cb9-35"><a href="#cb9-35"></a><span class="co">#&gt; Pseudolikelihood BIC: 177476.67 </span></span>
+<span id="cb9-36"><a href="#cb9-36"></a><span class="co">#&gt; Model selection table for number of interior knots:</span></span>
+<span id="cb9-37"><a href="#cb9-37"></a><span class="co">#&gt;       knots       ic</span></span>
+<span id="cb9-38"><a href="#cb9-38"></a><span class="co">#&gt;  [1,]     0 177541.3</span></span>
+<span id="cb9-39"><a href="#cb9-39"></a><span class="co">#&gt;  [2,]     1 177497.2</span></span>
+<span id="cb9-40"><a href="#cb9-40"></a><span class="co">#&gt;  [3,]     2 177478.9</span></span>
+<span id="cb9-41"><a href="#cb9-41"></a><span class="co">#&gt;  [4,]     3 177481.2</span></span>
+<span id="cb9-42"><a href="#cb9-42"></a><span class="co">#&gt;  [5,]     4 177477.1</span></span>
+<span id="cb9-43"><a href="#cb9-43"></a><span class="co">#&gt;  [6,]     5 177476.7</span></span>
+<span id="cb9-44"><a href="#cb9-44"></a><span class="co">#&gt;  [7,]     6 177477.7</span></span>
+<span id="cb9-45"><a href="#cb9-45"></a><span class="co">#&gt;  [8,]     7 177479.6</span></span>
+<span id="cb9-46"><a href="#cb9-46"></a><span class="co">#&gt;  [9,]     8 177481.4</span></span>
+<span id="cb9-47"><a href="#cb9-47"></a><span class="co">#&gt; [10,]     9 177480.7</span></span>
+<span id="cb9-48"><a href="#cb9-48"></a><span class="co">#&gt; [11,]    10 177481.2</span></span>
+<span id="cb9-49"><a href="#cb9-49"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb9-50"><a href="#cb9-50"></a><span class="kw">plot</span>(model2);</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Now five knots have been selected.</p>
+<p>It would be good to repeat this analysis to plot the mean of <span class="math inline">\(x_2\)</span> over time also in the same way.</p>
+</div>
+<div id="time-varying-effects-of-covariates" class="section level2">
+<h2>Time-varying effects of covariates</h2>
+<p>After this and further exploration of the data, we can go ahead to fit a nontrivial TVEM model, with covariates. We allow both <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span> to potentially have ``time-varying effects’’ (regression relationships with the response that change over time, that is, a potential interaction between time and the covariate, specified without the assumption of linearity). The implied mean model is <span class="math inline">\(E(y|t, x_1(t),x_2(t)) =\beta_0(t)+\beta_1(t)x_1(t)+\beta_2(t)x_2(t)\)</span> where <span class="math inline">\(t\)</span> is time in days.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>model3 &lt;-<span class="st"> </span><span class="kw">tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb10-2"><a href="#cb10-2"></a>               <span class="dt">formula=</span>y<span class="op">~</span>x1<span class="op">+</span>x2,</span>
+<span id="cb10-3"><a href="#cb10-3"></a>               <span class="dt">id=</span>subject_id,</span>
+<span id="cb10-4"><a href="#cb10-4"></a>               <span class="dt">time=</span>time);</span>
+<span id="cb10-5"><a href="#cb10-5"></a><span class="kw">print</span>(model3);</span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="co">#&gt; Response variable:   y </span></span>
+<span id="cb10-10"><a href="#cb10-10"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb10-11"><a href="#cb10-11"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb10-12"><a href="#cb10-12"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept), x1, x2</span></span>
+<span id="cb10-13"><a href="#cb10-13"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb10-14"><a href="#cb10-14"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb10-15"><a href="#cb10-15"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb10-16"><a href="#cb10-16"></a><span class="co">#&gt; Method fREML</span></span>
+<span id="cb10-17"><a href="#cb10-17"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb10-18"><a href="#cb10-18"></a><span class="co">#&gt; y ~ x1 + x2 + s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 24, fx = FALSE) + </span></span>
+<span id="cb10-19"><a href="#cb10-19"></a><span class="co">#&gt;     s(time, bs = &quot;ps&quot;, by = x1, pc = 0, m = c(2, 1), k = 24, </span></span>
+<span id="cb10-20"><a href="#cb10-20"></a><span class="co">#&gt;         fx = FALSE) + s(time, bs = &quot;ps&quot;, by = x2, pc = 0, m = c(2, </span></span>
+<span id="cb10-21"><a href="#cb10-21"></a><span class="co">#&gt;     1), k = 24, fx = FALSE)</span></span>
+<span id="cb10-22"><a href="#cb10-22"></a><span class="co">#&gt; Pseudolikelihood AIC: 44272.03</span></span>
+<span id="cb10-23"><a href="#cb10-23"></a><span class="co">#&gt; Pseudolikelihood BIC: 44373.9 </span></span>
+<span id="cb10-24"><a href="#cb10-24"></a><span class="co">#&gt; Note: Used listwise deletion for missing data.</span></span>
+<span id="cb10-25"><a href="#cb10-25"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb10-26"><a href="#cb10-26"></a><span class="kw">plot</span>(model3);</span></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYAAAAGACAMAAACTGUWNAAAA8FBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZmYAZrY6AAA6ADo6AGY6OgA6Ojo6OpA6ZmY6ZpA6ZrY6kJA6kLY6kNtmAABmADpmAGZmOgBmOjpmOmZmOpBmZjpmZmZmZpBmkLZmkNtmtttmtv+QOgCQOjqQOmaQZjqQZmaQZraQkGaQkLaQkNuQtpCQttuQ27aQ29uQ2/+2ZgC2Zjq2Zma2kDq2kGa2kJC2tpC2tra2ttu225C22/+2/7a2/9u2///bkDrbkGbbtmbbtpDbtrbb25Db29vb2//b/7bb/9vb////tmb/25D/27b/29v//7b//9v///+fiBzCAAAACXBIWXMAAA7DAAAOwwHHb6hkAAASWklEQVR4nO2di3/btBbH1W69yVjZgJTnStf2Mp6DBjoodNTtuAWSbLH////m6mE5ki3Zsiz5OPH5fbbUduSjI331lpOQDAUqAu3A2IUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgNUOwJwUmuQXDv45yq/s36zp4YxeTQjZu2g09vZTQj5gL4fT/Zvi6ko9UfTu57NWrm6L/94AeDTU49laT8DBggdzSAAzNmMvTxwSkJ6TsACG4n/rJmg1Zb6tptzekjpKvZamWQJo9OyPUwJm+YuDwgDIhue/JwBqb8J9OFhoCdh7Rk+W5D9HMgF3U0KeLth9tK4+fMku3U7J3nNmIdfeD7zQ5CFFCRJhWFacvmCXeej9GxF5Jw3Nf08AtJkUReUs0xPwLS0RCflQJiDhLtJqvRTOnspmYFZOgAzJE5CHyWTzMAkNYDj++wLgdXgpK2wR396PRwf/ntNXERFrY/kd9GCySC+5D/vXWe5lXoXZWRGSnRRh6NWD63RObwvcBA3Hf18AvA7PWT3WE/AT837/dZ6AokcSB6yw5UWJuqMlQAtZhBGlcxkBwGD89wXA6vBrbl6vwhcJOSaTdZ6AJcndEgfUi1liTkARkp0k8QEMxn9vALQOHxNZLJQEMPqztb0EJXygx2QvQUWYiACG4r83AN6tTLJKAugpeyna0I8WdK4yU9tQ2pPdEUMbKkKK1ORhtAS4jfe2zX9vALzbP8uUNlT4TWNiEWujCOrtUlbcYoSgJ6AIWR5F5AkQk6Nwo6DB+O8PgGKWs0k1AdSTSbbWx9HX9OCNHEenl2KMXEqADMlPZBglAXQcvn8dEsBA/MfFOGAhAGAhAGAhAGAhAGAhAGAhAGAFBZBUphptNxJZ+NU0zJw3oly3YRwUEsD6iC2HqwDaruDw8Om5eVd1OLojwwSQ5EvimyteAEKWrxhKfybDBMBzL9+90DbiNht0e9+yrYpim2+zcXfyKdn7SIZfFguOA1K+g8MXix48HiQAvoCSA9A24rQNuoNFsc1n37gbYhs0J/t/siXN9L8n/4Zams2CAuD5lgNQN+LUDbrJ4m91807duLsUpessU5bChiReTETJCLY2ngUFwFuOHIC6DVHaoCvKd+k6e5UAAm2+hNUyX7/eOgDKBh0r2cXmXek6CysABNv9CiuarNzzwQLYNEE6gGKDTjwTVQDQNu4GXwOSYvAzUABqH6BuxCkbdAyAsnm32bijvUFSbNwNsw/gm8jFduYQAaijIG0jbjPayZ+Jyrf5yqOgWSY37gY4CsqfY+GVdqAA1HmAthG32aATBUhu8ykbd3TewLf5ePhBzgMS0cDynB8oAD4T9lG5zfe1s5UKCWA19Su5JQDDXwsKqaCroXO/zrMEYDWdhHFnK4T7AcBCAMBCAMBCAMBCAMBCAMBCAMBCAMBCAMByArD++EJsCI1ojaYvOQNYsvWBBAmEliuA9Jwt16zeG9EyWT9CAMByA3C0f5PwJsiwTkmiKkgia/swYP8dU8g/vJnNTev9UcdR4QBY+zBg/7tHT0Qh6mzHZjyAjE1o2EpmELPcEwARXYyURAQQNoqqiJvxdtHXl6AIDAIBqO3DgkRhMdtjDchPAjMIZa33Poxof5oDdo9qcx4SQg8rJVFaTmkUAoBwIFCythMAMRzFi95sIVA9CJw7/YyChEkScBRUfJ8FMTyxY7cQIHXbWANk9gcdhs7tj+rUW+gIYQsBMHtFzQoGID23roPmEdbF4Q8hVO7k39hqXIoIFEVuTea/q3FTiPTVIbVweOL2nCHRllPsjnlh8Mqdqv9y/GmqyEEBbFp/V+OGELePnpxcXV39+uzRc+c4y0talqCtMfjkTtV/vhjHFHsmTMrNgQ+AX14Wh29OXCLVPXDn0Cyv3DH4bwQQdBS0MaVb9ADwRi0j6+8d4rb70z2J7W81+i+bHtNUOAAAfTmGKAftAaR/a6fvmvuBmji6c2h9j8X//AOBUTphrcQrcwA34/7Ru+drtWVxj8Tbvd6i0Et/afDpCUC0mY77j84J8OHglztx/K+5XU9Ux06YfRBKyO3zLm0T0IqDT+5E9t9wu5YULUWdakALDzzkxqFLDXB1wCuKwkhp3FMyB7cY53x3PYeB9wGVcWd7/yshrtST9Ds3J8RBveqNWMK2zx1//1vLUPwDAFh/s2k5068durFiKaIpnAOJCof2uePjv5f0Wa8lZT5N0NvPnv5+T52//+vF+y69WOsEuNcHr9yJ7n9WlPsiJdb0+PUBd4+55Qenbs44harc5db9eRmP7b8y163Pfv9OOL2/unf9zHWXhYZGCJ7GXfz3HAUpZb8x+7uMgt69+vLa0SO3YNbba7PA23gc/4s833jddR5jCrGcPvzt8Pj4sduz6EEWs4LOA6L5X2p6sobi72TcECI9P11/ftPXVF5aMSfFx3gs/+WoUx35dDduCLH+5Ib+43/r/fFqQ+sNOrjXKEf/W0WhDnuIcqG7cWMNeH7PdHt67+SbSyBXlZPlVwNC+68t8SsXQhg3hXj7WVG6Hb44JvRqQceZcObqv3MN9s/+bVgLMpts8Whf98jMDmjtvDbqbDVsChAivgWj1TzlUYzrMRnilh6oud886Hcy3j5EfAs1lvsBoLZFMqeLt4lX27Mx3jkEV28PNvVpvBQFMZV5tZPwcCYUgN4ebIpjvN2zrUTX5qJHzIEA9PZgUzTjhpKjZrE84P+0a+pfv/8hUrj9AOqfbTWW+eL9Lj4Ea4LiPthkV6+jIG2s6TnssRr3D8EV88GmOgEOQ73b/Xrj7UPEtwBlXI2iy1iz0Xi3EPEt9Gfc1oeVp7vBFBqA8eniDiOEAKOIzoo63eulBkRVZ/eA/Hb2P0gKie3Edtw+UEfVzOTrYu3B/+5LEZ196wFA3Uy+LtbBABhwAlxUO5Gsi3UoAIacABcN2f9RAKidydfFOhQAQ06Am2pm8nWxDgbAgBMQQlsAoIWRwQKwf2xj6wFsh1p97qc3IQBgjQjAMIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgNUdQHpu+RgE+9aSM9MbtmVtagngZ4KA/e8OYD4xb5Stj86ypeUHhufGJM8PFqtH5hsiCtj/zgDYCouxQCwPFpn41v7qWw9MN8Cs1UD73xkAc94aNStFVaVf/WFKAMwvBEH7HxdAYtxBS2aWIndpbXTjCdr/qAASY1O5/mJhTgDtwWyNbjxB+x8TQGL2Zn7WutGNKGj/43XClvIjPy9UdZRZ6R8AtP/xhqF1IzJziue0Cjt8MjywgP3vDoCWCPOo2FJQmOwTmd47YWj/cSkCWAgAWAgAWAgAWAgAWAgAWAgAWP0C2PafRI/gPwJoo20HIH5UdnsVw3+sAW207TUAAVSFANoIAQBr+wH0/9RJUEXwv18A6TnAgn9ARfAfZ8LAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAQgDAagdA/LQT1yS/cPDPUX5l/4b9xhn7Qd2EuHzJ9dtPCfmAvRxOld+RWk3NP8X17uet/sJLq7wB8GyiOT5b6wDYz1/OnQAwYzP28sQBwLZ/46hVrZug1ZTl7WrK82NJM5rmuswaBoBmH/vjBGCWvzgIAUgJADQ/WBtEW6CFBmDvGT1Zkv8cSQB3U0Kest+EXdG25uFLdul2Svae85+dE9r7gRf6PKSoASIMQ3n6gl3mofdvROQ7JU8AtJkXRf0s0wF8S0t0Qj6UABKexbRZWorMPpXN2KwMQIbkAPIw8oczyQQBFMrzgLdBS9ngFPm19+PRwb/n9FVkFOsj+B30YLJIL3ke7l9neS7nTRA7K0KykyIMvXpwnc7pbdgESeUAeBs0Z+2QDuAnlvv7r3MARY8qDlhlyasCzU4NgBayCCNq1xIBKJKtAG2DXvPs0Zugi4Qck8k6B7CUP1QqDmguzhIzgCIkO0kQgF0SAG2Djoks1vl7LN9Z6Z2t7TUgIfJ32u01oAiDAKqSAHi3yEZCJQD8l4bWmz7gowWda83UPoD2xHfE0AeIkIJGHkYD4DZe3TZ5A+DDFpbzRR8g8p3mFMs4bRREc3spG55ihKMDKEKWR0E5ADG5w1GQAoAWUzkbVgHQnJxka30ecE0P3sh5QHopxvglADIkP5FhFAB0HrF/jQBQoYUAgIUAgIUAgIUAgIUAgIUAgAUB4JaO+D9YAEQ8RAEAmCt7yqj+AfCV/7vt/mntgOoNQL6Ds3exeiz30lBZnzVgTvb/LJY0d3BRx1P9AeCLdvmif76nj+q1D1jm69c8/81PX41QPQKgVUBkO81/bICkegSQiH0YXv6v+4t24OoPAN9EZiV/juVfUW8A8udY2JNXxe4kqkcA/FE6mvnKcymoDBfjwIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgIUAgOUIYC4/hYQKLDcA8/wTK3PcxwotJwDrjy/Eweo93MgKLAQALMcmKG96ZFOECibHTjjBTjiSug9DSVQFSOKw5ZZC9pUB/5uaH+iMmkcIQGg+4x9+zBIDgQh5tCn6CICLjYL4SMg0CgqfR9yiQIAAuPoFIA0yBAhASA5D1SYoWj9JLMe7KbcUpud8AGqcBjjmkTMpYj3ZSQUYhjoZIa5xkZqzXVQQAFljS0ScI0MAdarrhOssuQ8qSe3pDipMDWgy5QygHAIBtLBgN+XCyBxgnADSV4e0TT88UYY8hh2x6jC0aqsym2roKSpvjxLA7aMnJ1dXV78+e/RcXqrbEVOzt9SDkuroxzJmss0oxgjgl5fF4ZsT8bd2Q0Yftys5SeQVPTgRl2QwU9Zvro0QwBs1i9ffiz/OAOS1pnGpkvnmm/O3xgcg/Vs7fac3PaapcOg8UqrGGAFYVLMjFjaPSnVipABEk9OwA99qMc41aDnQKAHIT9ERtx14uRRRl72usKrdsYsHW62aGuBuoWELVxvw1Fmqvj1SAH4WbAyUi8oYtdLYGG8eIYAr9ST9rp2FTVXQsJhDqMFs9WeEANbfbFr+9GuHB+HK8yw9c6v5unnTiKLBvZ1TNYVvP3v6+z3N/Pu/Xrxf1ws3t/sO/W5TqDECyLK7xzxPHpx6WxBvOAx7vI3vjMwpTO+v7l2fAo2aR2MFkGXvXn3p+JUyQfNI773HCmA5ffjb4fHxY7dHcUPmUb5Muum6RwkgPT9df37j/GEA+36AIWzDGmnF5CgBrD+5of/431YWZPGtBCguKrszpkkXzgOE0vPn90y3p/e1d2ojyE0ml8eVYsSfbV6zglXzwucoAdCZQJG5Dl9uaCv3+oE+692EIuWDZvd2S44prPmYasMcqrFbEK+WYAhAyHFT3vBGo/366TIC4Gq9J7x5o2MOIgAuPwCOj+3WCgEImTblHVbbCAJolGMKPTflcTGuUQF3xGIIAeTyGIYGEQIQ8hqGhhAC4PIcBQUQAuBCAPEUYBhK5OJanP87rgDD0KgKmtghKkgKie3EutzcOtDOCgEAq10iLbuUCMBfWAOAhQCA1X0pomwEAbRS96WIshEE0ErdZ8JlIwiglYIAQPnLfykCFUTdlyJQnTSKdnbIQgDAQgDAQgDAQgDAQgDAQgDAQgDA6g4gPbd8jIN964rlZ7PNSxrU0vimet0BzCfmRdL10Vm23Lsw32NENj9YrB6Zb9hddQbAFuqMBXp5sKBl2lgFlg9MN7T6kpydUWcALPOtWcdqQVXpV3+YAIxzqTUugMS4eprMLFXm0tpp7K6iAkiMTf36i4UZAO2BbZ3G7iomgMScm/Oz1p3GDiteJ2wp/+wnsZiqGc2sIID2sg1D60aUZmJz2gQ5fDJ8t9QdAC3R5lG9paAz2SdiY6sAuBQBLQQALAQALAQALAQALAQALAQArH4BjHPBs1YIAFi9AqCT5tGtdjYJawCwEACwEACwEACwegYwuqdOGtUvgPR8fAv+DcKZMLAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALAQALD+Dxp3oK8ZrCAsAAAAAElFTkSuQmCC" /><!-- --></p>
+<p>The output involved includes the formula which is sent to the back-end calculation package, the mgcv package by Simon Wood. It is not necessary to interpret the pieces of the formula in order to understand the output; it is mainly supplied for advanced users and potential debugging use. In summary, it says that y depends on x1 and x2 as parametric terms, on a set of spline terms based on time, on a set of spline terms based on time multiplied by x1, and on a set of spline terms based on time multiplied by x2. Further details on interpreting the formula can be found in the mgcv documentation.</p>
+<p>Holding <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span> constant, the mean of <span class="math inline">\(y\)</span> seems to decline over time. The penalty function causes the the relationship to be estimated as linear because there is no clear evidence of nonlinearity. From the results, <span class="math inline">\(x_1\)</span> appears to have an increasingly positive relationship with <span class="math inline">\(y\)</span> over time. <span class="math inline">\(x_2\)</span> also seems to predict <span class="math inline">\(y\)</span>, but the strength of the relationship does not change over time. Thus, we could reasonably fit a similar but simpler model, but with <span class="math inline">\(x_2\)</span> having a non-time-varying effect even though it has time-varying values.</p>
+</div>
+<div id="time-invariant-effects-of-covariates" class="section level2">
+<h2>Time-invariant effects of covariates</h2>
+<p>The following code fits a model where <span class="math inline">\(x_2\)</span> is assumed to have a time-invariant effect but <span class="math inline">\(x_1\)</span> is allowed to have a time-varying effect.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>model4 &lt;-<span class="st"> </span><span class="kw">tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb11-2"><a href="#cb11-2"></a>               <span class="dt">formula=</span>y<span class="op">~</span>x1,</span>
+<span id="cb11-3"><a href="#cb11-3"></a>               <span class="dt">invar_effect=</span><span class="op">~</span>x2,</span>
+<span id="cb11-4"><a href="#cb11-4"></a>               <span class="dt">id=</span>subject_id,</span>
+<span id="cb11-5"><a href="#cb11-5"></a>               <span class="dt">time=</span>time);</span>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="kw">print</span>(model4);</span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb11-9"><a href="#cb11-9"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb11-10"><a href="#cb11-10"></a><span class="co">#&gt; Response variable:   y </span></span>
+<span id="cb11-11"><a href="#cb11-11"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb11-12"><a href="#cb11-12"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb11-13"><a href="#cb11-13"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept), x1</span></span>
+<span id="cb11-14"><a href="#cb11-14"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb11-15"><a href="#cb11-15"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb11-16"><a href="#cb11-16"></a><span class="co">#&gt; Effects specified as non-time-varying: </span></span>
+<span id="cb11-17"><a href="#cb11-17"></a><span class="co">#&gt;     estimate standard_error</span></span>
+<span id="cb11-18"><a href="#cb11-18"></a><span class="co">#&gt; x2 0.1753651     0.01585862</span></span>
+<span id="cb11-19"><a href="#cb11-19"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb11-20"><a href="#cb11-20"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb11-21"><a href="#cb11-21"></a><span class="co">#&gt; Method fREML</span></span>
+<span id="cb11-22"><a href="#cb11-22"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb11-23"><a href="#cb11-23"></a><span class="co">#&gt; y ~ x1 + x2 + s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 24, fx = FALSE) + </span></span>
+<span id="cb11-24"><a href="#cb11-24"></a><span class="co">#&gt;     s(time, bs = &quot;ps&quot;, by = x1, pc = 0, m = c(2, 1), k = 24, </span></span>
+<span id="cb11-25"><a href="#cb11-25"></a><span class="co">#&gt;         fx = FALSE)</span></span>
+<span id="cb11-26"><a href="#cb11-26"></a><span class="co">#&gt; Pseudolikelihood AIC: 44285.93</span></span>
+<span id="cb11-27"><a href="#cb11-27"></a><span class="co">#&gt; Pseudolikelihood BIC: 44370.6 </span></span>
+<span id="cb11-28"><a href="#cb11-28"></a><span class="co">#&gt; Note: Used listwise deletion for missing data.</span></span>
+<span id="cb11-29"><a href="#cb11-29"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb11-30"><a href="#cb11-30"></a><span class="kw">plot</span>(model4);</span></code></pre></div>
+<p><img src="data:image/png;base64,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iBMDIAaQvSYAzCwGQKx7CCAvMQBiMQBiMQBiMQBiMQBiMQBiMQBiMQBiMQBiMQBiIQMoRPWqQ4f2YzuvN+o1lbSaP35cAEX1oklXkNWEWOfO4uSqXj9HKYL4UQGoccadPQz5BtbD1r5THemaszyXKOJHBaDe9jwWhisD1185y/aMoogfF4AMY2TSk1ypa1Px4MdzMTJXZB5RxI8KQNWQznqyauIcMe6r+bKuy2s2UcQ/K4B6lbRF6soau/bmEEX8M1dBrtypelfVwXSiiH/mRtgVo8o0dVNMEf983VAVuuPyUhOXqasgivhnvBHbldWnc0bCfmznbCKIH3koYvRufSeEcFaSZQ+DvBtKET8PxhGLARCLARCLARCLARCLARCLARCLAEBBO+ATLdz45wegLZdepJDjZwC+WjqAavbA2DLd3IUdP5cAXy29BDCAvhiArxgAsRgAsRgAse4AAPofvmKEHD/BUMRu0fcB2PHzYByxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACxGACx/g8nPw8EZOsnNQAAAABJRU5ErkJggg==" /><!-- --></p>
+<p>The implied mean model is <span class="math inline">\(E(y|t) =\beta_0(t)+\beta_1(t)x_1(t) + \beta_2 x_2(t).\)</span> Notice that only covariates with time-varying effects are listed in the formula argument. The invar_effect argument is used for covariates with time-invariant effects. Also notice that a tilde (~) sign is needed before the list of covariates with time-invariant effects, because it is treated by R as the right side of a formula. If there were multiple covariates with time-invariant effects, they would be listed as follows: “~x2+x3+x4.”</p>
+<p>In the output, there is no longer a plot for the coefficient of <span class="math inline">\(x_2\)</span> as a function of time, because <span class="math inline">\(\beta_2\)</span> is considered constant over time even if <span class="math inline">\(x_2\)</span> varies. Instead, the estimate and estimated standard error of <span class="math inline">\(\beta_2\)</span> are given as text in the output from print_tvem.</p>
+<p>The seeming oscillations in confidence interval width in the plot do not have any particular interpretation; they are just an artifact of the locations of the knots. Also, the confidence intervals shown are approximate pointwise confidence intervals, much like those in the Methodology Center’s %TVEM SAS macro. They are not simultaneous confidence bands, so they do not directly correct for multiple comparisons.</p>
+<p>The main takeaway message from the analysis is the increasing <span class="math inline">\(\beta_1(t)\)</span> over time, suggesting an increasing association between <span class="math inline">\(x_1\)</span> and <span class="math inline">\(y\)</span>, that is, some kind of interaction between <span class="math inline">\(t\)</span> and <span class="math inline">\(x_1\)</span> in predicting <span class="math inline">\(y\)</span>.</p>
+</div>
+</div>
+<div id="example-with-a-binary-outcome-variable" class="section level1">
+<h1>Example with a binary outcome variable</h1>
+<p>This example will be similar to the previous one, but with a binary response variable. The tvem library’s simulation function will also simulate binary <span class="math inline">\(y\)</span> if requested by an optional argument.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">set.seed</span>(<span class="dv">123</span>);</span>
+<span id="cb12-2"><a href="#cb12-2"></a>the_data &lt;-<span class="st"> </span><span class="kw">simulate_tvem_example</span>(<span class="dt">simulate_binary=</span><span class="ot">TRUE</span>);</span></code></pre></div>
+<p>The simulated dataset is similar to the previous example, but with binary <span class="math inline">\(y\)</span> (0=no, 1=yes) generated from a logistic model.</p>
+<div id="plotting-the-average-log-odds-over-time" class="section level2">
+<h2>Plotting the average log odds over time</h2>
+<p>We can plot the expected log odds over time, using an time-varying-intercept-only logistic model. The model assumes <span class="math inline">\(\mathrm{logit}(E(Y|t))=\beta_0(t)\)</span>. The binary outcome is specified using the family argument as in R’s glm function.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>model1 &lt;-<span class="st"> </span><span class="kw">tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb13-2"><a href="#cb13-2"></a>               <span class="dt">formula=</span>y<span class="op">~</span><span class="dv">1</span>,</span>
+<span id="cb13-3"><a href="#cb13-3"></a>               <span class="dt">family=</span><span class="kw">binomial</span>(),</span>
+<span id="cb13-4"><a href="#cb13-4"></a>               <span class="dt">id=</span>subject_id,</span>
+<span id="cb13-5"><a href="#cb13-5"></a>               <span class="dt">time=</span>time);</span></code></pre></div>
+<p>As before, you can use the default option of an automatic penalty function, or you could specify the number of knots, or you could use automatic selection for the number of knots without a penalty.</p>
+</div>
+<div id="including-covariates" class="section level2">
+<h2>Including covariates</h2>
+<p>A model with covariates works similarly to the previous example also.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>model2 &lt;-<span class="st"> </span><span class="kw">tvem</span>(<span class="dt">data=</span>the_data,</span>
+<span id="cb14-2"><a href="#cb14-2"></a>               <span class="dt">formula=</span>y<span class="op">~</span>x1,</span>
+<span id="cb14-3"><a href="#cb14-3"></a>               <span class="dt">invar_effect=</span><span class="op">~</span>x2,</span>
+<span id="cb14-4"><a href="#cb14-4"></a>               <span class="dt">id=</span>subject_id,</span>
+<span id="cb14-5"><a href="#cb14-5"></a>               <span class="dt">family=</span><span class="kw">binomial</span>(),</span>
+<span id="cb14-6"><a href="#cb14-6"></a>               <span class="dt">time=</span>time);</span>
+<span id="cb14-7"><a href="#cb14-7"></a><span class="kw">print</span>(model2);</span>
+<span id="cb14-8"><a href="#cb14-8"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb14-9"><a href="#cb14-9"></a><span class="co">#&gt; Time-Varying Effects Modeling (TVEM) Function Output </span></span>
+<span id="cb14-10"><a href="#cb14-10"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb14-11"><a href="#cb14-11"></a><span class="co">#&gt; Response variable:   y </span></span>
+<span id="cb14-12"><a href="#cb14-12"></a><span class="co">#&gt; Time interval:   0 to 7 </span></span>
+<span id="cb14-13"><a href="#cb14-13"></a><span class="co">#&gt; Number of subjects:  300</span></span>
+<span id="cb14-14"><a href="#cb14-14"></a><span class="co">#&gt; Effects specified as time-varying:  (Intercept), x1</span></span>
+<span id="cb14-15"><a href="#cb14-15"></a><span class="co">#&gt; You can use the plot_tvem function to view their plots.</span></span>
+<span id="cb14-16"><a href="#cb14-16"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb14-17"><a href="#cb14-17"></a><span class="co">#&gt; Effects specified as non-time-varying: </span></span>
+<span id="cb14-18"><a href="#cb14-18"></a><span class="co">#&gt;     estimate standard_error</span></span>
+<span id="cb14-19"><a href="#cb14-19"></a><span class="co">#&gt; x2 0.2074037     0.04819109</span></span>
+<span id="cb14-20"><a href="#cb14-20"></a><span class="co">#&gt; ======================================================= </span></span>
+<span id="cb14-21"><a href="#cb14-21"></a><span class="co">#&gt; Back-end model fitted in mgcv::bam function: </span></span>
+<span id="cb14-22"><a href="#cb14-22"></a><span class="co">#&gt; Method fREML</span></span>
+<span id="cb14-23"><a href="#cb14-23"></a><span class="co">#&gt; Formula:</span></span>
+<span id="cb14-24"><a href="#cb14-24"></a><span class="co">#&gt; y ~ x1 + x2 + s(time, bs = &quot;ps&quot;, by = NA, pc = 0, k = 24, fx = FALSE) + </span></span>
+<span id="cb14-25"><a href="#cb14-25"></a><span class="co">#&gt;     s(time, bs = &quot;ps&quot;, by = x1, pc = 0, m = c(2, 1), k = 24, </span></span>
+<span id="cb14-26"><a href="#cb14-26"></a><span class="co">#&gt;         fx = FALSE)</span></span>
+<span id="cb14-27"><a href="#cb14-27"></a><span class="co">#&gt; Pseudolikelihood AIC: 8609.09</span></span>
+<span id="cb14-28"><a href="#cb14-28"></a><span class="co">#&gt; Pseudolikelihood BIC: 8657.7 </span></span>
+<span id="cb14-29"><a href="#cb14-29"></a><span class="co">#&gt; Note: Used listwise deletion for missing data.</span></span>
+<span id="cb14-30"><a href="#cb14-30"></a><span class="co">#&gt; =======================================================</span></span>
+<span id="cb14-31"><a href="#cb14-31"></a><span class="kw">plot</span>(model2);</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The implied mean model is <span class="math inline">\(\mathrm{logit}(E(y|t)) =\beta_0(t)+\beta_1(t)x_1(t) + \beta_2 x_2(t).\)</span> In this simulated example, it isn’t very clear whether the effect of <span class="math inline">\(x_1\)</span> changes over time or not, although it seems to do so. Logistic regression analyses often have wider confidence intervals than ordinary regression analyses with the same sample size.</p>
+<p>With logistic TVEM, we can additionally plot exponentiated coefficients to get odds and odds ratios. In the plots below, the exponentiated intercept function shows the estimated odds of <span class="math inline">\(Y=1\)</span> at a given time, assuming <span class="math inline">\(x_1=x_2=0\)</span>. The exponentiated beta function for <span class="math inline">\(x_1\)</span> shows the estimated odds ratio for <span class="math inline">\(Y=1\)</span> given a 1-unit increase in <span class="math inline">\(x_1\)</span> at a given time.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">plot</span>(model2, <span class="dt">exponentiate=</span><span class="ot">TRUE</span>);</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Binary outcomes are not the only non-normal outcomes which can be modeled using TVEM. For example, Poisson count outcomes with a log link can be modeled by specifying family=poisson() instead of family=binomial(). However, for overdispersed or zero-inflated counts, the Poisson distribution might not be appropriate.<br />
+We also do not currently have a simulation function in the tvem package for Poisson data, because generating realistic longitudinal count data is beyond the scope of this package.</p>
+</div>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<ul>
+<li><p>de Boor, C. (1972). On calculating with B-splines. Journal of Approximation Theory, 6: 50–62.</p></li>
+<li><p>Eilers, P. H. C., &amp; Marx, B. D. (1996). Flexible smoothing with B-splines and penalties. Statistical Science, 11: 89-121.</p></li>
+<li><p>Hastie, T, Tibshirani, R. (1993). Varying-coefficient models. Journal of the Royal Statistical Socety, B, 55:757-796.</p></li>
+<li><p>Li, R., Dziak, J. J., Tan, X., Huang, L., Wagner, A. T., &amp; Yang, J. (2017). TVEM (time-varying effect model) SAS macro users’ guide (Version 3.1.1). University Park: The Methodology Center, Penn State. Available online at [<a href="https://www.methodology.psu.edu/downloads/tvem/" class="uri">https://www.methodology.psu.edu/downloads/tvem/</a>])(<a href="https://www.methodology.psu.edu/downloads/tvem/" class="uri">https://www.methodology.psu.edu/downloads/tvem/</a>) and archived at <a href="https://github.com/dziakj1/MethodologyCenterTVEMmacros">https://github.com/dziakj1/MethodologyCenterTVEMmacros</a> and <a href="https://scholarsphere.psu.edu/collections/v41687m23q">https://scholarsphere.psu.edu/collections/v41687m23q</a>.</p></li>
+<li><p>Ruppert, D., Wand, M. P., &amp; Carroll, R. J. (2003). Semiparametric regression. Cambridge: Cambridge University Press.</p></li>
+<li><p>Tan, X., Shiyko, M. P., Li, R., Li, Y., &amp; Dierker, L. (2012). A time-varying effect model for intensive longitudinal data. Psychological Methods, 17: 61-77.</p></li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

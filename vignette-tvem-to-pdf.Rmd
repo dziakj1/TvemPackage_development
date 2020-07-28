@@ -2,7 +2,7 @@
 title: "Fitting time-varying effects models"
 author: "John J. Dziak"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{Fitting time-varying effects models}
   %\VignetteEngine{knitr::rmarkdown}
