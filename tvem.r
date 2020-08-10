@@ -7,7 +7,7 @@
 #' @note The interface is based somewhat on the TVEM 3.1.1 SAS macro by 
 #' the Methodology Center (Li et al., 2017).  However, that macro uses 
 #' either "P-splines" (penalized truncated power splines) or "B-splines" 
-#' (unpenalized B(asic)-splines, like those of Eilers and Marx, 1996, 
+#' (unpenalized B[asic]-splines, like those of Eilers and Marx, 1996, 
 #' but without the smoothing) penalty.  The current function uses 
 #' penalized B-splines, much more like those of Eilers and Marx (1996).
 #' However, the use is more like the "P-spline" method in TVEM 3.1 than 
@@ -411,7 +411,7 @@ tvem <- function(data,
     working_sigsqd <- var(model1$residuals);
     for (i in unique(id_variable[which(!is.na(id_variable))])) {
       these <- which(id_variable==i);
-      residuals_these <- model1$model$y[these] - model1$fitted.values[these];
+      residuals_these <- model1$y[these] - model1$fitted.values[these];
       if (family$family=="gaussian") {
         multiplier <- 1/working_sigsqd;
       }
