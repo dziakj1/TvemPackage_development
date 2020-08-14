@@ -66,7 +66,7 @@ model1 <- tvem(data=the_data,
 You also have the option to turn off the penalty and control the smoothness yourself, by specifying the number of interior knots, here 2.
                
 ```{r}
-model1 <- tvem(data=the_data,
+model1_2knots_unpenalized <- tvem(data=the_data,
                formula=y~1,
                id=subject_id,
                num_knots=2,
@@ -75,11 +75,11 @@ model1 <- tvem(data=the_data,
 ```
 
 The implied mean model is $E(y|t) =\beta_0(t)$ where $t$ is time in days.
-After fitting the model, you can print a summary and plot the estimated coefficient.
+After fitting a model, you can print a summary and plot the estimated coefficient.
 
 ```{r,fig.width=4,fig.height=4}
-print(model1)
-plot(model1)
+print(model1_2knots_unpenalized)
+plot(model1_2knots_unpenalized)
 ```
 
 The plot shows the estimated coefficient function, and approximate estimates for 95% pointwise confidence intervals (not corrected for potential multiple comparisons) for the value of the function at each time.
@@ -105,26 +105,26 @@ plot(model2)
 The highest number of interior knots in the range is selected. It might be reasonable to run the function again with a higher value of `max_knots`, to see whether there might be an even better fit that had not been found yet.  Note that the individual knots and their locations do not have a special interpretation (as they do in some ``changepoint'' models); they are just a tool to make the fitted function more flexible than a simple polynomial would be.  Let us try again with a maximum of ten interior knots.
 
 ```{r,fig.width=4,fig.height=4}
-model2 <- select_tvem(data=the_data,
+model2_selected_knots <- select_tvem(data=the_data,
                     formula = x1~1,
                     id=subject_id,
                     time=time,
                     max_knots=10)
-print(model2)
-plot(model2)
+print(model2_selected_knots)
+plot(model2_selected_knots)
 ```
 
 The fit seems to continue slightly improving with higher and higher numbers of knots, but the differences in fit are so small no further insight would be gained by trying more.  The `use_bic` option can be set to `TRUE` in order to use a more parsimonious criterion that might be minimized at a smaller number of knots. 
 
 ```{r,fig.width=4,fig.height=4}
-model2 <- select_tvem(data=the_data,
+model2_selected_knots_bic <- select_tvem(data=the_data,
                     formula = x1~1,
                     id=subject_id,
                     use_bic=TRUE,
                     time=time,
                     max_knots=10)
-print(model2)
-plot(model2)
+print(model2_selected_knots_bic)
+plot(model2_selected_knots_bic)
 ```
 
 Now five knots have been selected.
@@ -191,7 +191,7 @@ We can plot the expected log odds over time, using an time-varying-intercept-onl
 
 
 ```{r}
-model1 <- tvem(data=the_data,
+model_binary1 <- tvem(data=the_data,
                formula=y~1,
                family=binomial(),
                id=subject_id,
@@ -205,14 +205,14 @@ As before, you can use the default option of an automatic penalty function, or y
 A model with covariates works similarly to the previous example also.
                
 ```{r}
-model2 <- tvem(data=the_data,
+model_binary2 <- tvem(data=the_data,
                formula=y~x1,
                invar_effect=~x2,
                id=subject_id,
                family=binomial(),
                time=time)
-print(model2)
-plot(model2)
+print(model_binary2)
+plot(model_binary2)
 ```
 
 The implied mean model is $\mathrm{logit}(E(y|t)) =\beta_0(t)+\beta_1(t)x_1(t) + \beta_2 x_2(t).$  In this simulated example, the relationship of $x_1$ with $y$ appears to change over time, becoming more strong and positive as in the previous example.  
