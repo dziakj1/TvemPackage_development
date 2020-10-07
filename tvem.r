@@ -8,12 +8,12 @@
 #' the Methodology Center (Li et al., 2017).  However, that macro uses 
 #' either "P-splines" (penalized truncated power splines) or "B-splines" 
 #' (unpenalized B[asic]-splines, like those of Eilers and Marx, 1996, 
-#' but without the smoothing) penalty.  The current function uses 
+#' but without the smoothing penalty).  The current function uses 
 #' penalized B-splines, much more like those of Eilers and Marx (1996).
-#' However, the use is more like the "P-spline" method in TVEM 3.1 than 
-#' the "B-spline" mode, in that the precise choice of knots 
+#' However, the use is more like the "P-spline" method than the "B-spline" method   
+#' in the TVEM 3.1.1 SAS macro, in that the precise choice of knots 
 #' is not critical, the tuning is done automatically, and the fitted model
-#' is intended to be interpreted in a population-averaged (marginal, 
+#' is intended to be interpreted in a population-averaged (i.e., marginal) 
 #' way.  Thus, random effects are not allowed, but sandwich standard 
 #' errors are used in attempt to account for within-subject correlation,
 #' similar to working-independence GEE (Liang and Zeger, 1986).
@@ -26,22 +26,27 @@
 #' @note The bam ("Big Additive Models") function in the 
 #' mgcv package ("Mixed GAM Computation Vehicle with GCV/AIC/REML smoothness
 #' estimation and GAMMs by REML/PQL") by Simon Wood is used for back-end
-#' calculations (see Wood, Goude & Shaw, 2015).
+#' calculations (see Wood, Goude, & Shaw, 2015).
 #' 
 #' @references 
 #' Eilers, P. H. C., & Marx, B.  D. (1996). Flexible smoothing with B-splines
 #' and penalties. Statistical Science, 11: 89-121.
+#' @references
 #' Hastie, T, Tibshirani, R. (1993). Varying-coefficient models. Journal 
-#' of the Royal Statistical Socety, B, 55:757-796
+#' of the Royal Statistical Socety, B, 55:757-796.
+#' @references
 #' Li, R., Dziak, J. J., Tan, X., Huang, L., Wagner, A. T., & Yang, J. (2017).
 #' TVEM (time-varying effect model) SAS macro users' guide (Version 3.1.1).
 #' University Park: The Methodology Center, Penn State. Retrieved from
 #' http://methodology.psu.edu
+#' @references
 #' Liang, K. Y., Zeger, S. L. Longitudinal data analysis using generalized linear
 #' models. Biometrika. 1986; 73:13-22.
+#' @references
 #' Tan, X., Shiyko, M. P., Li, R., Li, Y., & Dierker, L. (2012). A time-varying
 #' effect model for intensive longitudinal data. Psychological Methods, 17: 
 #' 61-77.
+#' @references
 #' Wood, S. N., Goude, Y., & Shaw, S. (2015). Generalized additive models 
 #' for large data sets. Applied Statistics, 64: 139-155.
 #' 
@@ -54,7 +59,7 @@
 #' outcome.  For a single time-varying-effects covariate, use
 #' y~x, where x is the name of the covariate.  For multiple 
 #' covariates, use syntax like y~x1+x2.  Do not include the non-
-#' time-varying-effects covariates here.  Not that the values 
+#' time-varying-effects covariates here.  Note that the values 
 #' of these covariates themselves may either be time-varying 
 #' or not time-varying.  For an example of a non-time-varying
 #' covariate that has a time-varying effect, consider the effect
@@ -81,7 +86,7 @@
 #' For a binary outcome, use binomial().  The parentheses after the
 #' family name are there because it is actually a built-in R object.
 #' @param num_knots The number of interior knots assumed per spline function,
-#' not counting exterior knots.   The user can either specify a single 
+#' not counting exterior knots.   The user can either specify a single number
 #' for each function (e.g., 3), or else a vector of numbers, the first
 #' for the intercept and the others for the time-varying covariates 
 #' (e.g., c(2,3,2)). If penalized=TRUE is used, it is
