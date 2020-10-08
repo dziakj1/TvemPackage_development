@@ -8,11 +8,11 @@ select_tvem <- function(max_knots=5,
   #' @param max_knots  The maximum number of interior knots to try (0 through max_knots)
   #' @param keep_going_if_too_few  Whether to continue in a stepwise fashion if the max_knots 
   #' does not seem to be high enough
-  #' @param use_bic Whether to use BIC (FALSE) instead of AIC (TRUE) when selecting the best 
-  #' model.  Note that both of these IC's are calculated from the working-independence 
-  #' pseudolikelihood rather than the unknown true likelihood.  However, for BIC, the
+  #' @param use_bic Whether to use BIC (TRUE) instead of AIC (FALSE) when selecting the best 
+  #' model. Note that both of these IC's are calculated from the working-independence 
+  #' pseudolikelihood rather than the unknown true likelihood. However, for BIC, the
   #' sample size is taken to be the number of subjects, not the number of observations.
-  #' @param penalize Whether to also include a penalty function in estimation
+  #' @param penalize Whether to include a penalty function in estimation
   #' @param print_output Whether to print the pseudolikelihoods obtained for each candidate number of interior knots.
   #' @param  ... Other inputs to be sent along to each call to the tvem function. 
   #' 
@@ -33,8 +33,8 @@ select_tvem <- function(max_knots=5,
     more_args$use_naive_se <- TRUE;
     more_args$print_gam_formula <- FALSE; 
     more_args <- more_args[ (names(more_args)!="max_knots")  &
-                              (names(more_args)!="keep_going_if_too_few") & 
-                              (names(more_args)!="use_bic")];
+                            (names(more_args)!="keep_going_if_too_few") & 
+                            (names(more_args)!="use_bic")];
     # I got this trick from https://statisticsglobe.com/remove-element-from-list-in-r ;
     #    ans1 <- try(suppressWarnings(do.call(tvem, more_args)));
     ans1 <- do.call(tvem, more_args); 
@@ -66,8 +66,8 @@ select_tvem <- function(max_knots=5,
   more_args$num_knots <- best_num_knots;
   more_args$use_naive_se <- FALSE; 
   more_args <- more_args[ (names(more_args)!="max_knots")  &
-                            (names(more_args)!="keep_going_if_too_few") & 
-                            (names(more_args)!="use_bic")];
+                          (names(more_args)!="keep_going_if_too_few") & 
+                          (names(more_args)!="use_bic")];
   ans1 <- do.call(tvem, more_args);
   ans1$ICs_table <- cbind(knots=num_knots_values, ic=IC_values);
   if (print_output) {

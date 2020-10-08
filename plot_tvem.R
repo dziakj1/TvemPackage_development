@@ -1,4 +1,4 @@
-#' plot.tvem:  Draw plots for a tvem model.
+#' plot.tvem:  Produce plots for a tvem model.
 #' 
 #' Produces plots from a tvem object produced by 
 #' the tvem function.  These plots will be shown on the default
@@ -36,7 +36,7 @@ plot.tvem <- function(x,
                       diagnostics=FALSE, 
                       exponentiate=FALSE, ...) {
   if (diagnostics) {
-    if (exponentiate) {stop("Error:  This function cannot currently provide diagnostic plots at the odds ratio scale.");}
+    if (exponentiate) {stop("Error:  This function cannot currently provide diagnostic plots on the odds ratio scale.");}
     if (use_panes) {par(mfrow=c(1,2))};
     hist(x$back_end_model$fitted,
          main="Residuals",

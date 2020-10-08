@@ -10,7 +10,7 @@
 #' (unpenalized B[asic]-splines, like those of Eilers and Marx, 1996, 
 #' but without the smoothing penalty).  The current function uses 
 #' penalized B-splines, much more like those of Eilers and Marx (1996).
-#' However, the use is more like the "P-spline" method than the "B-spline" method   
+#' However, their use is more like the "P-spline" method than the "B-spline" method   
 #' in the TVEM 3.1.1 SAS macro, in that the precise choice of knots 
 #' is not critical, the tuning is done automatically, and the fitted model
 #' is intended to be interpreted in a population-averaged (i.e., marginal) 
@@ -61,11 +61,8 @@
 #' covariates, use syntax like y~x1+x2.  Do not include the non-
 #' time-varying-effects covariates here.  Note that the values 
 #' of these covariates themselves may either be time-varying 
-#' or not time-varying.  For an example of a non-time-varying
-#' covariate that has a time-varying effect, consider the effect
-#' of biological sex on height during childhood and adolescence.  
-#' An intercept can be excluded by specifying, say, y~x1+x2+0 
-#' instead of y~x1+x2.  However, this is usually not encouraged. 
+#' or time-invariant. For example, time-invariant biological sex may have
+#' a time-varying effect on time-varying height during childhood.
 #' @param id The name of the variable in the dataset which represents 
 #' subject (participant) identity.  Observations are considered 
 #' to be correlated within subject (although the correlation 
@@ -76,9 +73,9 @@
 #' the time-varying effects are assumed to be smooth functions 
 #' of this variable.  
 #' @param invar_effects  Optionally, the names of one or more 
-#' variables in the dataset assumed to have a non-time-varying
+#' variables in the dataset assumed to have a non-time-varying (i.e., time-invariant)
 #' regression effect on the outcome.  The values of these covariates 
-#' themselves may either be time-varying or not time-varying.  The
+#' themselves may either be time-varying or time-invariant.  The
 #' covariates should be specified as the right side of a formula, e.g.,
 #' ~x1 or ~x1+x2.
 #' @param family  The outcome family, as specified in functions like 
@@ -86,7 +83,7 @@
 #' For a binary outcome, use binomial().  The parentheses after the
 #' family name are there because it is actually a built-in R object.
 #' @param num_knots The number of interior knots assumed per spline function,
-#' not counting exterior knots.   The user can either specify a single number
+#' not counting exterior knots. The user can either specify a single number
 #' for each function (e.g., 3), or else a vector of numbers, the first
 #' for the intercept and the others for the time-varying covariates 
 #' (e.g., c(2,3,2)). If penalized=TRUE is used, it is
@@ -109,25 +106,25 @@
 #' fitting situations.  
 #' @param basis Form of function basis (an optional argument about computational 
 #' details passed on to the mgcv::s function as bs=).  EXPERIMENTAL -- PLEASE
-#' DON'T USE THIS.
+#' DO NOT USE THIS.
 #' @param method Fitting method (an optional argument about computational 
-#' details passed on to the mgcv::bam function as method).   EXPERIMENTAL -- PLEASE
-#' DON'T USE THIS.
+#' details passed on to the mgcv::bam function as method).  EXPERIMENTAL -- PLEASE
+#' DO NOT USE THIS.
 #' @param use_naive_se  Save time by using a simpler, less valid formula for 
-#' standard errors.  Only do this if you are doing this TVEM inside a loop for
-#' bootstrapping or model selection and plan to ignore its standard errors.
+#' standard errors. Only do this if you are doing TVEM inside a loop for
+#' bootstrapping or model selection and plan to ignore these standard errors.
 #' @param print_gam_formula  Print the formula used to do the back-end calculations
 #' in the bam (large data gam) function in the mgcv package.
 #' 
-#' @return An object of type tvem.  The components of an object of 
+#' @return An object of type tvem. The components of an object of 
 #' type tvem are as follows:
 #' \describe{
 #' \item{time_grid}{A vector containing many evenly spaced time 
 #' points along the interval between the lowest and highest observed 
-#' time value.  The exact number of points is determined by the 
+#' time value. The exact number of points is determined by the 
 #' input parameter 'grid'.}
 #' \item{grid_fitted_coefficients}{A list of data frames, one for 
-#' each smooth function which was fit (including the intercept).  Each 
+#' each smooth function which was fit (including the intercept). Each 
 #' data frame contains the fitted estimates of the function
 #' at each point of time_grid, along with pointwise standard 
 #' errors and pointwise confidence intervals.}
@@ -289,9 +286,9 @@ tvem <- function(data,
     }
   };
   crit_value <- qnorm(1-alpha/2);
-  ##################################################
+  ####################################################################
   # Construct regular grid for plotting fitted coefficient functions;
-  ##################################################
+  ####################################################################
   if (is.null(grid)) {
     grid <- 100;
   }
@@ -304,11 +301,11 @@ tvem <- function(data,
   if (length(grid)>1) {
     time_grid <- grid;
   }
-  ##################################
+  ##########################################################################
   # Construct formula to send in to the back-end computation function.
   # This function is bam (big generalized additive models) in the  
   # mgcv (Mixed GAM Computation Vehicle) package by Simon Wood of R Project.
-  ##################################
+  ##########################################################################
   if (num_invar_effects>0 | num_varying_effects>0) {
     bam_formula <- as.formula(paste(response_name," ~ ", "1"));
   } else {
@@ -389,11 +386,11 @@ tvem <- function(data,
     }
     colnames(estimated_b) <- varying_effects_names;
   }
-  ##################################
+  ###############################################################
   # Calculate confidence intervals using sandwich formula
   # to better take into account the existence of within-subject
   # correlation;
-  ##################################
+  ###############################################################
   # Consult design matrix of spline bases on grid of observed times:
   design <- predict.bam(model1,type="lpmatrix");
   # Construct design matrix of spline bases on regular grid of times:

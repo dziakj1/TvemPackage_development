@@ -1,8 +1,8 @@
-#' simulate_tvem_example:  Simulate a dataset for demonstrating the tvem function. 
+#' simulate_tvem_example: Simulate a dataset for demonstrating the tvem function. 
 #' 
 #' By default, the data-generating model has a time-varying intercept,
 #' and two time-varying covariates named x1 and x2. 
-#' x1 has a time-varying effect and x2 has no effect.
+#' x1 has a time-varying effect and x2 has a time-invariant effect.
 #' 
 #' @param n_subjects Number of subjects in dataset 
 #' @param max_time The time point at the end of the simulated time interval 
@@ -21,10 +21,10 @@
 #' @param sigma_y  Error standard deviation of y, only used if the outcomes are to be normal rather than binary 
 #' @param mu_x1_function Mean of covariate 1 as function of time
 #' @param mu_x2_function Mean of covariate 2 as function of time 
-#' @param beta0_y_function Intercept of TVEM as function of time
+#' @param beta0_y_function TVEM intercept as function of time
 #' @param beta1_y_function TVEM coefficient of covariate 1 as function of time  
 #' @param beta2_y_function TVEM coefficient of covariate 2 as function of time 
-#' @param y_short_term_rho Correlation between adjacent measurements of y, only used if it is to be normal and not binary 
+#' @param y_short_term_rho Correlation between adjacent measurements of y, only used if it is normal and not binary 
 #' @return A simulated dataset with the following variables:
 #' \describe{
 #' \item{subject_id}{Subject ID}
