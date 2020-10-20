@@ -95,7 +95,11 @@
 #' difference penalty.
 #' @param grid The number of points at which the spline coefficients
 #' will be estimated, for the purposes of the pointwise estimates and 
-#' pointwise standard errors to be included in the output object.
+#' pointwise standard errors to be included in the output object. The
+#' grid points will be generated as equally spaced over the observed 
+#' interval. Alternatively, grid can be specified as a vector instead, in which 
+#' each number in the vector is interpreted as a time point for the grid
+#' itself.
 #' @param penalize Whether to add a complexity penalty; TRUE or FALSE
 #' @param alpha  One minus the nominal coverage for 
 #' the pointwise confidence intervals to be constructed.  Note that a 
@@ -282,7 +286,7 @@ tvem <- function(data,
       num_knots_by_effect <- num_knots;
     } else {
       stop(paste("Please either provide a single num_knots, or else a vector with",
-            "values for each time-varying coefficient including the intercept."));
+                 "values for each time-varying coefficient including the intercept."));
     }
   };
   crit_value <- qnorm(1-alpha/2);
@@ -357,14 +361,15 @@ tvem <- function(data,
   } 
   if (family$family=="binomial") {
     if (max(data_for_analysis[,response_name],na.rm=TRUE)>1) {
-      stop("Currently the only kind of binomial data supported in the tvem function is binary.")
+      stop(paste("In this version of tvem, binomial data must be specified",
+                 "as 0s and 1s; multinomial data is not allowed."));
     }
   }
   if (print_gam_formula) {print(bam_formula);}
   model1 <- mgcv::bam(bam_formula,
-                data=data_for_analysis,
-                family=family,
-                method=method);
+                      data=data_for_analysis,
+                      family=family,
+                      method=method);
   ##################################
   # Extract coefficient estimates;
   ##################################
