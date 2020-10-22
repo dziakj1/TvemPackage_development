@@ -24,6 +24,9 @@ print.tvem <- function(x, ornate=TRUE, ...) {
   cat(paste("Response variable:  ",
             x$model_information$response_name,
             "\n"));
+  cat(paste("Response outcome distribution type:",
+            x$model_information$outcome_family,
+            "\n"));
   cat(paste("Time interval:  ",
             round(min(x$time_grid),4),
             "to",
