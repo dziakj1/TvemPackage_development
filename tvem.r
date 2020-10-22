@@ -80,8 +80,9 @@
 #' ~x1 or ~x1+x2.
 #' @param family  The outcome family, as specified in functions like 
 #' glm.  For a numerical outcome you can use the default of gaussian(). 
-#' For a binary outcome, use binomial().  The parentheses after the
-#' family name are there because it is actually a built-in R object.
+#' For a binary outcome, use binomial().  For a count outcome, you can 
+#' use poisson().  The parentheses after the family name are there because it is 
+#' actually a built-in R object.
 #' @param num_knots The number of interior knots assumed per spline function,
 #' not counting exterior knots. The user can either specify a single number
 #' for each function (e.g., 3), or else a vector of numbers, the first
@@ -109,11 +110,11 @@
 #' These problems are not unique to TVEM but are found in many curve-
 #' fitting situations.  
 #' @param basis Form of function basis (an optional argument about computational 
-#' details passed on to the mgcv::s function as bs=).  EXPERIMENTAL -- PLEASE
-#' DO NOT USE THIS.
+#' details passed on to the mgcv::s function as bs=).  We strongly recommend
+#' leaving it at the default value.
 #' @param method Fitting method (an optional argument about computational 
-#' details passed on to the mgcv::bam function as method).  EXPERIMENTAL -- PLEASE
-#' DO NOT USE THIS.
+#' details passed on to the mgcv::bam function as method).  We strongly recommend
+#' leaving it at the default value.
 #' @param use_naive_se  Save time by using a simpler, less valid formula for 
 #' standard errors. Only do this if you are doing TVEM inside a loop for
 #' bootstrapping or model selection and plan to ignore these standard errors.
@@ -365,6 +366,16 @@ tvem <- function(data,
                  "as 0s and 1s; multinomial data is not allowed."));
     }
   }
+  if (family$family=="poisson") {
+    if (max(abs(data_for_analysis[,response_name]-round(data_for_analysis[,response_name])),na.rm=TRUE)>1e-10) {
+      stop("Please provide only integer (whole number) count data for the outcome.");
+    } else {
+      data_for_analysis[,response_name] <- round(data_for_analysis[,response_name]);
+    }
+    if (min(data_for_analysis[,response_name],na.rm=TRUE)<0) {
+      stop(paste("Count data must be nonnegative."));
+    }
+  }
   if (print_gam_formula) {print(bam_formula);}
   model1 <- mgcv::bam(bam_formula,
                       data=data_for_analysis,
@@ -422,7 +433,7 @@ tvem <- function(data,
       if (family$family=="gaussian") {
         multiplier <- 1/working_sigsqd;
       }
-      if (family$family=="binomial") {
+      if (family$family=="binomial" | family$family=="poisson") {
         multiplier <- 1;
       }
       if (length(these)>0) {

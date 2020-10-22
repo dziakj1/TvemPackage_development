@@ -220,8 +220,7 @@ With logistic TVEM, we can additionally plot exponentiated coefficients to get o
 plot(model_binary2, exponentiate=TRUE)
 ```
 
-Although we do not present specific examples, binary outcomes are not the only non-normal outcomes which can be modeled using TVEM. For example, Poisson count outcomes with a log link can be modeled by specifying `family=poisson()` instead of `family=binomial()`. However, for overdispersed or zero-inflated counts, the Poisson distribution might not be appropriate.
-
+Although we do not present an example, Poisson count outcomes with a log link can be modeled similarly by specifying `family=poisson()` instead of `family=binomial()`. However, for overdispersed or zero-inflated counts, the Poisson distribution might not be appropriate.  Currently, the only distributions supported by the `tvem` package are normal with identity link function for continuous numerical responses, binomial with logistic link for binary responses, and Poisson with log link for count responses. 
 # References
 
 * de Boor, C. (1972). On calculating with B-splines. Journal of Approximation Theory, 6: 50–62.
