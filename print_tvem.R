@@ -7,9 +7,6 @@
 #' @export
 #' @method print tvem
 
-
-
-
 print.tvem <- function(x, ornate=TRUE, ...) {
   if (ornate) {
     divider <- "======================================================= \n";
@@ -31,6 +28,11 @@ print.tvem <- function(x, ornate=TRUE, ...) {
             round(min(x$time_grid),4),
             "to",
             round(max(x$time_grid),4),"\n"));
+  if (!is.null(x$model_information$weights_variable_name)) {
+    cat(paste("Weighted by:  ",
+              x$model_information$weights_variable_name,
+              "\n"));
+  }
   cat("Number of subjects:  ");
   cat(paste(x$model_information$n_subjects));
   cat("\nEffects specified as time-varying:  ");
