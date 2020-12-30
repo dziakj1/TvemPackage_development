@@ -298,7 +298,6 @@ tvem <- function(data,
   if (use_weights) {
     names_to_check <- c(names_to_check, weights_variable_name);
   }
-  print(names_to_check);
   for (variable_name in names_to_check) {
     if (sum(is.na(data_for_analysis[,variable_name]))>0) {
       data_for_analysis <- data_for_analysis[which(!is.na(data_for_analysis[,variable_name])),]; 
