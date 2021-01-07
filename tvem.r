@@ -86,11 +86,8 @@
 #' actually a built-in R object.
 #' @param weights An optional sampling weight variable.
 #' @param num_knots The number of interior knots assumed per spline function,
-#' not counting exterior knots. The user can either specify a single number
-#' for each function (e.g., 3), or else a vector of numbers, the first
-#' for the intercept and the others for the time-varying covariates 
-#' (e.g., c(2,3,2)). If penalized=TRUE is used, it is
-#' probably okay to leave num_knots at its default.
+#' not counting exterior knots. This is assumed to be the same for each function.
+#' If penalized=TRUE is used, it is probably okay to leave num_knots at its default.
 #' @param spline_order The shape of the function between knots, with a
 #' default of 3 representing cubic spline.
 #' @param penalty_function_order The order of the penalty function (see 
@@ -317,15 +314,8 @@ tvem <- function(data,
   } else {
     varying_effects_names <- NA;
   }
-  if (length(num_knots)==1) {
-    num_knots_by_effect <- rep(num_knots, 1+num_varying_effects);
-  } else {
-    if (length(num_knots)==1+num_varying_effects) {
-      num_knots_by_effect <- num_knots;
-    } else {
-      stop(paste("Please either provide a single num_knots, or else a vector with",
-                 "values for each time-varying coefficient including the intercept."));
-    }
+  if (length(num_knots)>1) {
+      stop(paste("Please provide a single number for num_knots."));
   };
   crit_value <- qnorm(1-alpha/2);
   if (use_weights) {
@@ -387,7 +377,7 @@ tvem <- function(data,
   }
   new_text <- paste("~ . + s(",time_variable_name,",bs='",basis,"',by=NA,pc=0,",
                     "k=",
-                    num_knots_by_effect[1]+spline_order+1,",fx=",
+                    num_knots+spline_order+1,",fx=",
                     ifelse(penalize,"FALSE","TRUE"),")",sep=""); 
   # for time-varying intercept; 
   bam_formula <- update(bam_formula,as.formula(new_text)); 
@@ -403,7 +393,7 @@ tvem <- function(data,
                         ",",
                         penalty_function_order,"),",
                         "k=",
-                        num_knots_by_effect[1+i]+spline_order+1,",fx=",ifelse(penalize,"FALSE","TRUE"),
+                        num_knots+spline_order+1,",fx=",ifelse(penalize,"FALSE","TRUE"),
                         ")",sep=""); 
       bam_formula <- update(bam_formula,as.formula(new_text));
     }
