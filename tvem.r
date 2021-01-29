@@ -326,9 +326,15 @@ tvem <- function(data,
       if (min(data_for_analysis[,weights_variable_name])<0) {
         stop("Weights cannot be rescaled if any of them are negative."); 
       } 
-      data_for_analysis[,weights_variable_name] <- data_for_analysis[,weights_variable_name] / mean(data_for_analysis[,weights_variable_name]);
+      data_for_analysis$weights_for_analysis <- data_for_analysis[,weights_variable_name] / mean(data_for_analysis[,weights_variable_name]);
+    } else {
+      data_for_analysis$weights_for_analysis <- data_for_analysis[,weights_variable_name];
     }
   };
+  if (num_knots + spline_order + 1 > length(unique(time_variable))) {
+    stop(paste("Because of the limited number of unique time points, \n",
+               "please provide a smaller value for num_knots."));
+  }
   ####################################################################
   # Construct regular grid for plotting fitted coefficient functions;
   ####################################################################
@@ -416,11 +422,14 @@ tvem <- function(data,
   }
   if (print_gam_formula) {print(bam_formula);}
   if (use_weights) {
-    weights_in_data_for_analysis <- data_for_analysis[,weights_variable_name];
+    weights_for_analysis <- NULL; # this is a clumsy workaround
+    # to tell the R syntax checker that weights_for_analysis 
+    # is not an undeclared object (but is actually a column of 
+    # data_for_analysis);
     model1 <- mgcv::bam(bam_formula,
                         data=data_for_analysis,
                         family=family,
-                        weights=weights_in_data_for_analysis,
+                        weights=weights_for_analysis,
                         method=method);
   } else {
     model1 <- mgcv::bam(bam_formula,
