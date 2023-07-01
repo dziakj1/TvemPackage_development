@@ -4,9 +4,7 @@ select_tvem <- function(max_knots=5,
                         penalize=FALSE,
                         print_output=TRUE,
                         ...) { 
-  #' select_tvem:  Select number of interior knots for an unpenalized TVEM. 
-  #' If there are more than one time-varying coefficient, then the current version of this   
-  #' function constrains each to have the same number and location of knots, in order to   #' avoid a higher-dimensional grid search.
+  #' select_tvem:  Select number of interior knots for an unpenalized TVEM.
   #' @param max_knots  The maximum number of interior knots to try (0 through max_knots)
   #' @param keep_going_if_too_few  Whether to continue in a stepwise fashion if the max_knots 
   #' does not seem to be high enough
@@ -34,8 +32,6 @@ select_tvem <- function(max_knots=5,
   #' @export
   
   args1 <- match.call();  
-  if (length(max_knots)<1) {stop("Please provide a number for max_knots.");}
-  if (length(max_knots)>1) {stop("Please provide a single number for max_knots.");}
   num_knots_values <- 0:max_knots;  # will try at least each of these values for num_knots;
   IC_values <- rep(NA,length(num_knots_values)); 
   done_looking <- FALSE;
@@ -53,8 +49,7 @@ select_tvem <- function(max_knots=5,
     # I got this trick from https://statisticsglobe.com/remove-element-from-list-in-r ;
     #    ans1 <- try(suppressWarnings(do.call(tvem, more_args)));
     ans1 <- do.call(tvem, more_args); 
-    
-    if(inherits(ans1, "try-error")) {
+    if (inherits(ans1,"try-error")) {
       IC_values[num_knots_values_index] <- Inf;
     } 
     if (use_bic==FALSE) {
